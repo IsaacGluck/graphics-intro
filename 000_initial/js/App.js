@@ -15,6 +15,8 @@ let App = function(canvas, overlay) {
 
 	this.timeAtLastFrame = new Date().getTime(); // ADDED get the time 
 
+	this.keysPressed = {};
+
 	// create a simple scene
 	this.scene = new Scene(this.gl);
 };
@@ -30,9 +32,14 @@ App.prototype.registerEventHandlers = function() {
 	let theApp = this;
 	document.onkeydown = function(event) {
 		//jshint unused:false
+
+		theApp.keysPressed[keyboardMap[event.keyCode]] = true;
+
 	};
 	document.onkeyup = function(event) {
 		//jshint unused:false
+
+		theApp.keysPressed[keyboardMap[event.keyCode]] = false;
 	};
 	this.canvas.onmousedown = function(event) {
 		//jshint unused:false
@@ -61,7 +68,7 @@ App.prototype.update = function() {
 	let pendingResourceNames = Object.keys(this.gl.pendingResources);
 	if (pendingResourceNames.length === 0) {
 		// animate and draw scene
-		this.scene.update(this.gl);
+		this.scene.update(this.gl, this.keysPressed);
 		this.overlay.innerHTML = "Wendell Sucks";
 	} else {
 		this.overlay.innerHTML = "Loading: " + pendingResourceNames;

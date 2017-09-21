@@ -4,23 +4,23 @@ let Scene = function(gl) {
   this.fsSolid = new Shader(gl, gl.FRAGMENT_SHADER, "solid_fs.essl");
   this.solidProgram = new Program(gl, this.vsIdle, this.fsSolid);
   this.triangleGeometry = new TriangleGeometry(gl);
-  // this.triangleGeometry2 = new TriangleGeometry(gl); // triangle 2
 
   this.timeAtLastFrame = new Date().getTime();
 
-  // this.trianglePosition = {x:1, y:0, z:0}; // Added for motion
+  this.trianglePosition = new Vec3(0, 0, 0);
 
-  this.trianglePosition = new Vec3(0, 0, 0); // Added for WebGLMath
+  this.material = new Material(gl, this.solidProgram);
+  this.material.solidColor.set(1, 1, 1);
 
 
-
-  // this.t1x = 1;
-  // this.t2x = 1;
+  this.dx = 1;
+  this.scaleVector = new Vec2(1, 1, 0);
+  this.scaleChange = .05;
+  this.rotateVal = 0;
+  this.rotateChange = .05;
 };
 
 Scene.prototype.update = function(gl, keysPressed) {
-  //jshint bitwise:false
-  //jshint unused:false
   
   // velocity constant on all computers
   let timeAtThisFrame = new Date().getTime();
@@ -34,63 +34,62 @@ Scene.prototype.update = function(gl, keysPressed) {
   
 
   // Added for WebGLMath
-  var dx = (0.5 * dt);
-  var diffVector = new Vec2(dx, 0, 0);
-  this.trianglePosition.add(diffVector);
-  if (this.trianglePosition.x > 2)
+  if (keysPressed["RIGHT"]) {
+    var diffVector = new Vec2(this.dx*dt, 0, 0);
+    this.trianglePosition.add(diffVector);
+
+    if (this.trianglePosition.x > 2)
     this.trianglePosition.x = -2;
+  }
+
+  if (keysPressed["LEFT"]) {
+    var diffVector = new Vec2(this.dx*dt*-1, 0, 0);
+    this.trianglePosition.add(diffVector);
+
+    if (this.trianglePosition.x < -2)
+    this.trianglePosition.x = 2;
+  }
+
+  if (keysPressed["UP"]) {
+    var diffVector = new Vec2(0, this.dx*dt, 0);
+    this.trianglePosition.add(diffVector);
+
+    if (this.trianglePosition.y > 2)
+    this.trianglePosition.y = -2;
+  }
+
+  if (keysPressed["DOWN"]) {
+    var diffVector = new Vec2(0, this.dx*dt*-1, 0);
+    this.trianglePosition.add(diffVector);
+
+    if (this.trianglePosition.y < -2)
+    this.trianglePosition.y = 2;
+  }
+
+  if (keysPressed["S"]) {
+    this.scaleVector.add(new Vec2(this.scaleChange, this.scaleChange, 0));
+  }
+
+  if (keysPressed["U"]) {
+    this.scaleVector.add(new Vec2(-this.scaleChange, -this.scaleChange, 0));
+  }
 
 
-  // this.trianglePosition.x = this.t1x - (0.2 * dt); // Added for motion
-  // if (this.trianglePosition.x < -1)
-  //   this.trianglePosition.x = 2;
-  // this.t1x = this.trianglePosition.x;
+  // this.rotateVal += .1; // Continuous
+  if (keysPressed["R"]) {
+    this.rotateVal += this.rotateChange;
+  }
 
+  if (keysPressed["T"]) {
+    this.rotateVal -= this.rotateChange;
+  }
 
-  this.solidProgram.commit();
+  
 
-  // // Added for motion
-  var trianglePositionLocation = gl.getUniformLocation(this.solidProgram.glProgram, "trianglePosition");
-  if(trianglePositionLocation < 0)
-  console.log("Could not find uniform trianglePosition.");
-  else
-    this.trianglePosition.commit(gl, trianglePositionLocation);
-    // gl.uniform3f(trianglePositionLocation, this.trianglePosition.x, this.trianglePosition.y, this.trianglePosition.z);
-  // // ~~~~~~~~~~
+  this.material.modelMatrix.set().rotate(this.rotateVal).scale(this.scaleVector).translate(this.trianglePosition);
+  this.material.commit();
 
   this.triangleGeometry.draw();
-
-
-
-
-  // // Trianlge 2
-
-
-  // // Scale
-  // // this.trianglePosition.x *= this.scale2;
-  // // this.t2x = this.trianglePosition.x;
-  // // this.trianglePosition.y *= this.scale2;
-  // // this.trianglePosition.z *= this.scale2;
-
-
-  // this.trianglePosition.x = this.t2x + (0.2 * dt); // Added for motion
-  // if (this.trianglePosition.x > 2)
-  // this.trianglePosition.x = -1;
-  // this.t2x = this.trianglePosition.x;
-
-  // if(trianglePositionLocation < 0)
-  // console.log("Could not find uniform trianglePosition.");
-  // else
-  // gl.uniform3f(trianglePositionLocation, this.trianglePosition.x, this.trianglePosition.y, this.trianglePosition.z);
-
-  // this.triangleGeometry.draw();
-
-  // this.trianglePosition.x = this.t1x;
-
-  // // Unscale
-  // // this.trianglePosition.x /= this.scale2;
-  // // this.trianglePosition.y /= this.scale2;
-  // // this.trianglePosition.z /= this.scale2;
 
 };
 
