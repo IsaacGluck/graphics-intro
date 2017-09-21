@@ -7,8 +7,7 @@ let Scene = function(gl) {
 
   this.timeAtLastFrame = new Date().getTime();
 
-  this.trianglePosition = new Vec3(0, 0, 0);
-
+  // this.trianglePosition = new Vec3(0, 0, 0);
   this.material = new Material(gl, this.solidProgram);
   this.material.solidColor.set(1, 1, 1);
 
@@ -18,6 +17,20 @@ let Scene = function(gl) {
   this.scaleChange = .05;
   this.rotateVal = 0;
   this.rotateChange = .05;
+
+
+  this.mode = 0;
+
+  this.gameObjects = [];
+  this.gameObjects.push(new GameObject(new Mesh(this.triangleGeometry, this.material)));
+  this.gameObjects.push(new GameObject(new Mesh(this.triangleGeometry, this.material)));
+
+  this.gameObjects.forEach( function(gameObject, index) {  
+    gameObject.mode = index;
+  });
+  console.log(this.gameObjects);
+
+
 };
 
 Scene.prototype.update = function(gl, keysPressed) {
@@ -32,67 +45,63 @@ Scene.prototype.update = function(gl, keysPressed) {
   gl.clearDepth(1.0);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
+  let theScene = this;
+  ["1", "2"].forEach( function(element, index){
+    if (keysPressed[element])
+      theScene.mode = index + 1;
+
+  });
 
   // Added for WebGLMath
   if (keysPressed["RIGHT"]) {
     var diffVector = new Vec2(this.dx*dt, 0, 0);
-    this.trianglePosition.add(diffVector);
-
-    if (this.trianglePosition.x > 2)
-      this.trianglePosition.x = -2;
+    this.gameObjects[0].position.add(diffVector);
   }
 
   if (keysPressed["LEFT"]) {
     var diffVector = new Vec2(this.dx*dt*-1, 0, 0);
-    this.trianglePosition.add(diffVector);
-
-    if (this.trianglePosition.x < -2)
-    this.trianglePosition.x = 2;
+    // this.gameObjects[0].position.add(diffVector);
+    let theScene = this;
+    this.gameObjects.forEach( function(element) {
+      if (element.mode == theScene.mode) {
+        element.position.add(diffVector);
+      }
+    });
   }
 
   if (keysPressed["UP"]) {
     var diffVector = new Vec2(0, this.dx*dt, 0);
-    this.trianglePosition.add(diffVector);
-
-    if (this.trianglePosition.y > 2)
-    this.trianglePosition.y = -2;
+    this.gameObjects[0].position.add(diffVector);
   }
 
   if (keysPressed["DOWN"]) {
     var diffVector = new Vec2(0, this.dx*dt*-1, 0);
-    this.trianglePosition.add(diffVector);
-
-    if (this.trianglePosition.y < -2)
-    this.trianglePosition.y = 2;
+    this.gameObjects[0].position.add(diffVector);
   }
 
   if (keysPressed["S"]) {
     this.scaleVector.add(new Vec2(this.scaleChange, this.scaleChange, 0));
+    this.gameObjects[0].scale.set(this.scaleVector);
   }
 
   if (keysPressed["U"]) {
     this.scaleVector.add(new Vec2(-this.scaleChange, -this.scaleChange, 0));
+    this.gameObjects[0].scale.set(this.scaleVector);
   }
 
-
-  // this.rotateVal += .1; // Continuous
   if (keysPressed["R"]) {
     this.rotateVal += this.rotateChange;
+    this.gameObjects[0].orientation = this.rotateVal;
   }
 
   if (keysPressed["T"]) {
     this.rotateVal -= this.rotateChange;
+    this.gameObjects[0].orientation = this.rotateVal;
   }
 
-
-  this.material.modelMatrix.set().rotate(this.rotateVal).scale(this.scaleVector).translate(this.trianglePosition);
-  this.material.commit();
-  this.triangleGeometry.draw();
-
-  this.material.modelMatrix.set().rotate(this.rotateVal).scale(this.scaleVector).translate(this.trianglePosition.times(-1));
-  this.material.commit();
-  this.triangleGeometry.draw();
-
+  this.gameObjects.forEach( function(gameObject) {
+    gameObject.draw();
+  });
 };
 
 

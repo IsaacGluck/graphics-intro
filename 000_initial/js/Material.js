@@ -10,19 +10,18 @@ let Material = function(gl, program) {
                                 uniform.type, uniform.size); 
     Object.defineProperty(theMaterial, uniformName,
 				{value: reflectionVariable} ); 
+  }); 
 
-    // return new Proxy(this, { 
-    //   get : function(target, name){ 
-    //     if(!(name in target)){ 
-    //       console.error(
-    // "WARNING: Ignoring attempt to access material property '" + 
-    //           name + "'. Is '" + name + "' an unused uniform?" ); 
-    //       return Material.dummy; 
-    //     } 
-    //     return target[name]; 
-    //   }, 
-    // }); 
-
+  return new Proxy(this, { 
+    get : function(target, name){ 
+      if(!(name in target)){ 
+        console.error(
+  "WARNING: Ignoring attempt to access material property '" + 
+            name + "'. Is '" + name + "' an unused uniform?" ); 
+        return Material.dummy; 
+      } 
+      return target[name]; 
+    }, 
   }); 
 };
 
@@ -38,7 +37,7 @@ Material.prototype.commit = function() {
 }; 
 
 
-// absorbs all function calls and property accesses without effect
+ // absorbs all function calls and property accesses without effect
 Material.dummy = new Proxy(new Function(), { 
   get: function(target, name){ 
     return Material.dummy; 
