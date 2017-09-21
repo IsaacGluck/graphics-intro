@@ -24,6 +24,8 @@ let Scene = function(gl) {
   this.gameObjects = [];
   this.gameObjects.push(new GameObject(new Mesh(this.triangleGeometry, this.material)));
   this.gameObjects.push(new GameObject(new Mesh(this.triangleGeometry, this.material)));
+  this.gameObjects.push(new GameObject(new Mesh(this.triangleGeometry, this.material)));
+  this.gameObjects.push(new GameObject(new Mesh(this.triangleGeometry, this.material)));
 
   this.gameObjects.forEach( function(gameObject, index) {  
     gameObject.mode = index;
@@ -46,16 +48,22 @@ Scene.prototype.update = function(gl, keysPressed) {
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
   let theScene = this;
-  ["1", "2"].forEach( function(element, index){
+  ["0", "1", "2", "3"].forEach( function(element, index){
     if (keysPressed[element])
-      theScene.mode = index + 1;
+      theScene.mode = index;
 
   });
 
   // Added for WebGLMath
   if (keysPressed["RIGHT"]) {
     var diffVector = new Vec2(this.dx*dt, 0, 0);
-    this.gameObjects[0].position.add(diffVector);
+    // this.gameObjects[0].position.add(diffVector);
+    let theScene = this;
+    this.gameObjects.forEach( function(element) {
+      if (element.mode == theScene.mode) {
+        element.position.add(diffVector);
+      }
+    });
   }
 
   if (keysPressed["LEFT"]) {
@@ -71,12 +79,24 @@ Scene.prototype.update = function(gl, keysPressed) {
 
   if (keysPressed["UP"]) {
     var diffVector = new Vec2(0, this.dx*dt, 0);
-    this.gameObjects[0].position.add(diffVector);
+    // this.gameObjects[0].position.add(diffVector);
+    let theScene = this;
+    this.gameObjects.forEach( function(element) {
+      if (element.mode == theScene.mode) {
+        element.position.add(diffVector);
+      }
+    });
   }
 
   if (keysPressed["DOWN"]) {
     var diffVector = new Vec2(0, this.dx*dt*-1, 0);
-    this.gameObjects[0].position.add(diffVector);
+    // this.gameObjects[0].position.add(diffVector);
+    let theScene = this;
+    this.gameObjects.forEach( function(element) {
+      if (element.mode == theScene.mode) {
+        element.position.add(diffVector);
+      }
+    });
   }
 
   if (keysPressed["S"]) {
