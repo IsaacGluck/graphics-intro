@@ -31,7 +31,7 @@ Scene.prototype.update = function(gl, keysPressed) {
   gl.clearColor(1.0, 1.0, 1.0, 1.0);
   gl.clearDepth(1.0);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-  
+
 
   // Added for WebGLMath
   if (keysPressed["RIGHT"]) {
@@ -39,7 +39,7 @@ Scene.prototype.update = function(gl, keysPressed) {
     this.trianglePosition.add(diffVector);
 
     if (this.trianglePosition.x > 2)
-    this.trianglePosition.x = -2;
+      this.trianglePosition.x = -2;
   }
 
   if (keysPressed["LEFT"]) {
@@ -84,11 +84,13 @@ Scene.prototype.update = function(gl, keysPressed) {
     this.rotateVal -= this.rotateChange;
   }
 
-  
 
   this.material.modelMatrix.set().rotate(this.rotateVal).scale(this.scaleVector).translate(this.trianglePosition);
   this.material.commit();
+  this.triangleGeometry.draw();
 
+  this.material.modelMatrix.set().rotate(this.rotateVal).scale(this.scaleVector).translate(this.trianglePosition.times(-1));
+  this.material.commit();
   this.triangleGeometry.draw();
 
 };
