@@ -19,6 +19,9 @@ let Scene = function(gl) {
 
 
   this.mode = 0;
+  
+  // Camera
+  this.camera = new OrthoCamera();
 
   this.gameObjects = [];
   this.gameObjects.push(new GameObject(new Mesh(this.triangleGeometry, this.material)));
@@ -29,8 +32,7 @@ let Scene = function(gl) {
   this.gameObjects.forEach( function(gameObject, index) {  
     gameObject.mode = index;
   });
-  console.log(this.gameObjects);
-
+  // console.log(this.gameObjects);
 
 };
 
@@ -119,7 +121,7 @@ Scene.prototype.update = function(gl, keysPressed) {
   }
 
   this.gameObjects.forEach( function(gameObject) {
-    gameObject.draw();
+    gameObject.draw(theScene.camera);
   });
 };
 

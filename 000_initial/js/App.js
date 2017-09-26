@@ -9,7 +9,6 @@ let App = function(canvas, overlay) {
 		throw new Error("Browser does not support WebGL");
 
 	}
-	this.resize();
 
 	this.gl.pendingResources = {};
 
@@ -19,6 +18,8 @@ let App = function(canvas, overlay) {
 
 	// create a simple scene
 	this.scene = new Scene(this.gl);
+
+	this.resize();
 };
 
 // match WebGL rendering resolution and viewport to the canvas size
@@ -26,6 +27,10 @@ App.prototype.resize = function() {
 	this.canvas.width = this.canvas.clientWidth;
 	this.canvas.height = this.canvas.clientHeight;
 	this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+
+	this.scene.camera.setAspectRatio(
+    this.canvas.clientWidth /
+    this.canvas.clientHeight );
 };
 
 App.prototype.registerEventHandlers = function() {

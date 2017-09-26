@@ -6,7 +6,7 @@ let Program = function(gl, vertexShader, fragmentShader) {
   gl.attachShader(this.glProgram, fragmentShader.glShader);
 
   gl.bindAttribLocation(this.glProgram, 0, 'vertexPosition');
-  gl.bindAttribLocation(this.glProgram, 1, 'vertexColor'); // ADDED
+  gl.bindAttribLocation(this.glProgram, 1, 'vertexColor');
 
 
   gl.linkProgram(this.glProgram);
@@ -31,5 +31,6 @@ let Program = function(gl, vertexShader, fragmentShader) {
 
 Program.prototype.commit = function(){
 	this.gl.useProgram(this.glProgram);
+  // console.log(this.uniforms);
 };
 

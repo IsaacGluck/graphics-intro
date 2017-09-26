@@ -11,18 +11,13 @@ let GameObject = function(mesh) {
 };
 
 
-GameObject.prototype.updateModelMatrix = function(){ 
-// TODO: set the model matrix according to the position, orientation, and scale
+GameObject.prototype.updateModelMatrix = function() { 
 	this.modelMatrix.set().scale(this.scale).rotate(this.orientation).translate(this.position);
 };
 
 
-GameObject.prototype.draw = function(){ 
-
+GameObject.prototype.draw = function(camera) {
   this.updateModelMatrix();
-
-	// TODO: Set the uniform modelViewProjMatrix (reflected in the material) from the modelMatrix (no camera yet). Operator = cannot be used. Use Mat4 methods set() and/or mul().
-  this.mesh.material.modelViewProjMatrix.set(this.modelMatrix);
-
+  this.mesh.material.modelViewProjMatrix.set(this.modelMatrix.mul(camera.viewProjMatrix));
   this.mesh.draw(); 
 };
