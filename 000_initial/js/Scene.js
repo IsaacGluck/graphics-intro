@@ -7,7 +7,6 @@ let Scene = function(gl) {
 
   this.timeAtLastFrame = new Date().getTime();
 
-  // this.trianglePosition = new Vec3(0, 0, 0);
   this.material = new Material(gl, this.solidProgram);
   this.material.solidColor.set(1, 1, 1);
 
