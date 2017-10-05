@@ -81,7 +81,6 @@ Scene.prototype.drawBoard = function(boardSize) {
       let dy = (boardWidth * (j / 10.00)) - offset; 
       if (this.gameObjects[i+j] != null) {
         this.gameObjects[i+j].position.set(new Vec2(dx, dy, 0));
-        this.gameObjects[i+j].scale.set(new Vec2(.6, .6, 0));
       }
     }
   }
@@ -91,11 +90,9 @@ Scene.prototype.drawBoard = function(boardSize) {
 Scene.prototype.coordToIndex = function(canvasX, canvasY, canvas) {
   let retIndex = -1;
   this.gameObjects.forEach(function(gameObject, index) {
-    // .09
     let centerX = gameObject.position.storage[0];
     let centerY = gameObject.position.storage[1];
 
-    // console.log(canvas.clientWidth, canvas.clientHeight + (canvas.clientWidth - canvas.clientHeight));
 
     if (canvasX < centerX + .09 && canvasX > centerX - .09) {
       if (canvasY < centerY + .09 && canvasY > centerY - .09) {
@@ -114,17 +111,19 @@ Scene.prototype.swap = function(index1, index2) {
 }
 
 Scene.prototype.disappear = function(index) {
-  let oldPosition = this.gameObjects[index].position;
-  let oldScale = this.gameObjects[index].scale;
+  this.gameObjects[index].disappear = true;
+}
 
-
-  // for (var i = 0; i < 100; i++) {
-  //   this.gameObjects[index].rotate(.05);
-  // }
+Scene.prototype.replace = function(index) {
+  let oldPosition = this.gameObjects[index].oldPosition;
 
   this.gameObjects[index] = this.generateRandomShape();
   this.gameObjects[index].position = oldPosition;
-  this.gameObjects[index].scale = oldScale;
+}
+
+Scene.prototype.stopQuake = function() {
+  this.camera.rotate(0);
+  this.camera.updateViewProjMatrix();
 }
 
 
@@ -147,35 +146,60 @@ Scene.prototype.update = function(gl, keysPressed) {
   gl.clearDepth(1.0);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-  if (keysPressed["Q"]) {
-    // console.log(Math.sin(dt));
-    // this.camera.rotate(Math.sin(dt));
 
-    if (this.shakeBool) {
-      this.camera.shake(Math.sin(dt));
-    } else {
-      this.camera.shake(-1 * Math.sin(dt));
-    }
-    this.shakeBool = !this.shakeBool;
+  // QUAKE
+  if (keysPressed["Q"]) {
+    this.camera.rotate(Math.sin(timeAtThisFrame/80)/10);
       
     this.camera.updateViewProjMatrix();
 
     this.gameObjects.forEach( function(gameObject, index) {
       if ( (Math.floor(Math.random() * 1000)) == 1) {
         theScene.disappear(index);
-        console.log(index);
       }
     });
-
   }
 
 
-  this.gameObjects.forEach( function(gameObject) {
+  // TURN THE TABLES
+  if (keysPressed["A"]) {
+    this.camera.stableRotation -= Math.PI/2;
+    this.camera.rotate(0);
+    this.camera.updateViewProjMatrix();
+
+    keysPressed["A"] = false;
+  }
+
+  if (keysPressed["D"]) {
+    this.camera.stableRotation += Math.PI/2;
+    this.camera.rotate(0);
+    this.camera.updateViewProjMatrix();
+
+    keysPressed["D"] = false;
+  }
+
+
+  this.gameObjects.forEach( function(gameObject, index) {
     
     // Rotate Square
     if(gameObject.type === theScene.SQUARE) {
       gameObject.rotate(theScene.squareRotateChange);
     }
+
+    // DRAMATIC EXIT
+    if (gameObject.disappear == true) {
+      gameObject.rotate(theScene.squareRotateChange);
+      let oldScale = gameObject.scale;
+      gameObject.scale = oldScale.add(new Vec3(-.01, -.01, 0));
+    }
+    if (gameObject.scale.x <= .05) {
+      gameObject.replace = true;
+    }
+    if (gameObject.replace == true && gameObject.disappear == true) {
+      theScene.replace(index);
+      // console.log(theScene.coordToIndex(gameObject.position.x), theScene.coordToIndex(gameObject.position.y), gameObject.type);
+    }
+
 
     gameObject.draw(theScene.camera);
   });

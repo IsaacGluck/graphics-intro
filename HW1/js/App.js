@@ -44,15 +44,23 @@ App.prototype.registerEventHandlers = function() {
 
 	};
 	document.onkeyup = function(event) {
+		if (theApp.keysPressed["Q"]) {
+			theApp.scene.stopQuake();
+		}
+
 		theApp.keysPressed[keyboardMap[event.keyCode]] = false;
 	};
 
 	this.canvas.onmousedown = function(event) {
 		//jshint unused:false
-		let startX =  2 * ((event.clientX / theApp.canvas.clientWidth)  - .5) * theApp.canvas.clientWidth /
-		theApp.canvas.clientHeight;
+		let startX =  2 * ((event.clientX / theApp.canvas.clientWidth)  - .5);
 		let startY = -2 * ((event.clientY / theApp.canvas.clientHeight) - .5);
 
+		let coordVec = new Vec4(startX, startY, 0, 1);
+		coordVec = coordVec.mul(new Mat4 (theApp.scene.camera.viewProjMatrix).invert());
+
+		startX = coordVec.x;
+		startY = coordVec.y;
 
 		let swapIndex = theApp.scene.coordToIndex(startX, startY, theApp.canvas);
 		if (swapIndex >= 0) {
@@ -71,10 +79,14 @@ App.prototype.registerEventHandlers = function() {
 	};
 
 	this.canvas.onmousemove = function(event) {
-		// console.log("here");
-		let updateX =  2 * ((event.clientX / theApp.canvas.clientWidth)  - .5) * theApp.canvas.clientWidth /
-		theApp.canvas.clientHeight;
+		let updateX =  2 * ((event.clientX / theApp.canvas.clientWidth)  - .5);
 		let updateY = -2 * ((event.clientY / theApp.canvas.clientHeight) - .5);
+
+		let coordVec = new Vec4(updateX, updateY, 0, 1);
+		coordVec = coordVec.mul(new Mat4 (theApp.scene.camera.viewProjMatrix).invert());
+
+		updateX = coordVec.x;
+		updateY = coordVec.y;
 
 		if (theApp.swapIndex >= 0) {
 			theApp.scene.gameObjects[theApp.swapIndex].position.storage[0] = updateX;
@@ -94,9 +106,15 @@ App.prototype.registerEventHandlers = function() {
 			theApp.scene.gameObjects[theApp.swapIndex].position.storage[1] = theApp.swapOldY;				
 		}
 
-		let newX =  2 * ((event.clientX / theApp.canvas.clientWidth)  - .5) * theApp.canvas.clientWidth /
-		theApp.canvas.clientHeight;
+		let newX =  2 * ((event.clientX / theApp.canvas.clientWidth)  - .5);
 		let newY = -2 * ((event.clientY / theApp.canvas.clientHeight) - .5);
+
+		let coordVec = new Vec4(newX, newY, 0, 1);
+		coordVec = coordVec.mul(new Mat4 (theApp.scene.camera.viewProjMatrix).invert());
+
+		newX = coordVec.x;
+		newY = coordVec.y;
+
 		let newIndex = theApp.scene.coordToIndex(newX, newY, theApp.canvas);
 
 

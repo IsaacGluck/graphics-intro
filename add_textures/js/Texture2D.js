@@ -23,5 +23,10 @@ Texture2D.prototype.loaded = function(gl){
   gl.bindTexture(gl.TEXTURE_2D, null); 
   if( --gl.pendingResources[this.mediaFileUrl] === 0 ) { 
     delete gl.pendingResources[this.mediaFileUrl]; 
-  } 
+  }
+	gl.enable(gl.BLEND);
+	gl.blendFunc(
+	  gl.SRC_ALPHA,
+	  gl.ONE_MINUS_SRC_ALPHA);
+
 };

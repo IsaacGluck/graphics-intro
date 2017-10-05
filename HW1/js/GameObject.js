@@ -5,7 +5,11 @@ let GameObject = function(mesh, type) {
 
   this.position = new Vec3(0, 0, 0); 
   this.orientation = 0; 
-  this.scale = new Vec3(1, 1, 1);
+  this.scale = new Vec3(.6, .6, 1);
+
+  this.disappear = false;
+  this.replace = false;
+  this.oldPosition = this.position;
 
 
   this.modelMatrix = new Mat4(); 

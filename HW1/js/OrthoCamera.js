@@ -1,6 +1,7 @@
 var OrthoCamera = function() { 
   // this.position = new Vec2(.5, .45);
   this.position = new Vec2(0, 0);
+  this.stableRotation = 0;
   this.rotation = 0; 
   this.windowSize = new Vec2(2, 2); 
   
@@ -24,9 +25,5 @@ OrthoCamera.prototype.setAspectRatio = function(ar)
 }; 
 
 OrthoCamera.prototype.rotate = function(phi) {
-  this.rotation = phi;
-}
-
-OrthoCamera.prototype.shake = function(positionChange) {
-  this.position.add(new Vec2(positionChange, positionChange));
+  this.rotation = phi + this.stableRotation;
 }

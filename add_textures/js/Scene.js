@@ -8,14 +8,19 @@ let Scene = function(gl) {
   // Textures
   this.vsTextured = new Shader(gl, gl.VERTEX_SHADER, "textured_vs.essl");
   this.fsTextured = new Shader(gl, gl.FRAGMENT_SHADER, "textured_fs.essl");
-  this.texturedProgram = new TexturedProgram(gl, this.vsIdle, this.fsSolid);
+  this.texturedProgram = new TexturedProgram(gl, this.vsTextured, this.fsTextured);
 
+  this.texture2D = new Texture2D(gl, "img/asteroid.png");
+
+  this.textureMaterial = new Material(gl, this.texturedProgram);
+  this.textureMaterial.colorTexture.set(this.texture2D);
 
   this.material = new Material(gl, this.solidProgram);
   this.material.solidColor.set(1, 1, 1);
   
 
   this.triangleGeometry = new TriangleGeometry(gl);
+  this.quadGeometry = new TexturedQuadGeometry(gl);
 
   this.timeAtLastFrame = new Date().getTime();
 
@@ -37,9 +42,13 @@ let Scene = function(gl) {
   this.gameObjects.push(new GameObject(new Mesh(this.triangleGeometry, this.material)));
   this.gameObjects.push(new GameObject(new Mesh(this.triangleGeometry, this.material)));
   this.gameObjects.push(new GameObject(new Mesh(this.triangleGeometry, this.material)));
+  this.gameObjects.push(new GameObject(new Mesh(this.quadGeometry, this.textureMaterial)));
 
   this.gameObjects.forEach( function(gameObject, index) {  
     gameObject.mode = index;
+    if (index == 4) {
+      gameObject.scale.set(new Vec3(.3, .3, 0));
+    }
   });
   // console.log(this.gameObjects);
 

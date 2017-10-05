@@ -1,4 +1,4 @@
-uniform.textureUnit"use strict";
+"use strict";
 let TexturedQuadGeometry = function(gl) { 
   this.gl = gl; 
   // vertex buffer 
