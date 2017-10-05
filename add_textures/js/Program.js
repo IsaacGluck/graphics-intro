@@ -1,4 +1,4 @@
-let TexturedProgram = function(gl, vertexShader, fragmentShader) {
+let Program = function(gl, vertexShader, fragmentShader) {
   this.gl = gl;
   this.sourceFileNames = {vs:vertexShader.sourceFileName, fs:fragmentShader.sourceFileName};
   this.glProgram = gl.createProgram();
@@ -6,8 +6,7 @@ let TexturedProgram = function(gl, vertexShader, fragmentShader) {
   gl.attachShader(this.glProgram, fragmentShader.glShader);
 
   gl.bindAttribLocation(this.glProgram, 0, 'vertexPosition');
-  gl.bindAttribLocation(this.glProgram, 1, "vertexNormal");  
-  gl.bindAttribLocation(this.glProgram, 2, "vertexTexCoord");
+  gl.bindAttribLocation(this.glProgram, 1, 'vertexColor');
 
 
   gl.linkProgram(this.glProgram);
@@ -18,8 +17,6 @@ let TexturedProgram = function(gl, vertexShader, fragmentShader) {
   this.uniforms = {}; 
   let nUniforms = gl.getProgramParameter(this.glProgram,
                                          gl.ACTIVE_UNIFORMS); 
-
-  let textureUnitCount = 0;
   for(let i=0; i<nUniforms; i++){ 
     let glUniform = gl.getActiveUniform(this.glProgram, i); 
     let uniform = { 
@@ -29,16 +26,10 @@ let TexturedProgram = function(gl, vertexShader, fragmentShader) {
                        glUniform.name) 
     }; 
     this.uniforms[glUniform.name.split('[')[0]] = uniform; 
-
-    if(glUniform.type === gl.SAMPLER_2D || 
-        glUniform.type === gl.SAMPLER_CUBE) { 
-      uniform.textureUnit = textureUnitCount; 
-      textureUnitCount += uniform.size; 
-    } 
   }
 };
 
-TexturedProgram.prototype.commit = function(){
+Program.prototype.commit = function(){
 	this.gl.useProgram(this.glProgram);
   // console.log(this.uniforms);
 };

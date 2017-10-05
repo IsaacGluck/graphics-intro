@@ -1,14 +1,23 @@
 "use strict";
 let Scene = function(gl) {
+  // Normal Colors
   this.vsIdle = new Shader(gl, gl.VERTEX_SHADER, "idle_vs.essl");
   this.fsSolid = new Shader(gl, gl.FRAGMENT_SHADER, "solid_fs.essl");
-  this.solidProgram = new TexturedProgram(gl, this.vsIdle, this.fsSolid);
-  this.triangleGeometry = new TriangleGeometry(gl);
+  this.solidProgram = new Program(gl, this.vsIdle, this.fsSolid);
+  
+  // Textures
+  this.vsTextured = new Shader(gl, gl.VERTEX_SHADER, "textured_vs.essl");
+  this.fsTextured = new Shader(gl, gl.FRAGMENT_SHADER, "textured_fs.essl");
+  this.texturedProgram = new TexturedProgram(gl, this.vsIdle, this.fsSolid);
 
-  this.timeAtLastFrame = new Date().getTime();
 
   this.material = new Material(gl, this.solidProgram);
   this.material.solidColor.set(1, 1, 1);
+  
+
+  this.triangleGeometry = new TriangleGeometry(gl);
+
+  this.timeAtLastFrame = new Date().getTime();
 
 
   this.dx = 1;

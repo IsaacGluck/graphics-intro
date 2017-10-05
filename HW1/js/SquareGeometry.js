@@ -1,4 +1,4 @@
-"use strict";
+uniform.textureUnit"use strict";
 let SquareGeometry = function(gl) {
   this.gl = gl;
 
