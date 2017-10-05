@@ -2,7 +2,7 @@
 let Scene = function(gl) {
   this.vsIdle = new Shader(gl, gl.VERTEX_SHADER, "idle_vs.essl");
   this.fsSolid = new Shader(gl, gl.FRAGMENT_SHADER, "solid_fs.essl");
-  this.solidProgram = new Program(gl, this.vsIdle, this.fsSolid);
+  this.solidProgram = new TexturedProgram(gl, this.vsIdle, this.fsSolid);
   this.triangleGeometry = new TriangleGeometry(gl);
 
   this.timeAtLastFrame = new Date().getTime();
