@@ -3,6 +3,7 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `
 	attribute vec2 vertexTexCoord;
 	varying vec2 texCoord; // pass this on from vertex shader
 	uniform mat4 modelViewProjMatrix;
+	
 	  	  
 	void main(void) {
 		texCoord = vertexTexCoord;

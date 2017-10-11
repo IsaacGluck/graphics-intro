@@ -11,9 +11,14 @@ let Scene = function(gl) {
   this.texturedProgram = new TexturedProgram(gl, this.vsTextured, this.fsTextured);
 
   this.texture2D = new Texture2D(gl, "img/boom.png");
+  this.textureOffsetX = 0;
+  this.textureOffsetY = 0;
+  this.textureOffset = new Vec2(this.textureOffsetX, this.textureOffsetY);
+  this.textureRunningTime = 0;
 
   this.textureMaterial = new Material(gl, this.texturedProgram);
   this.textureMaterial.colorTexture.set(this.texture2D);
+  this.textureMaterial.textureOffset.set(this.textureOffset);
 
   this.material = new Material(gl, this.solidProgram);
   this.material.solidColor.set(1, 1, 1);
@@ -60,6 +65,21 @@ Scene.prototype.update = function(gl, keysPressed) {
   let timeAtThisFrame = new Date().getTime();
   let dt = (timeAtThisFrame - this.timeAtLastFrame) / 1000.0;
   this.timeAtLastFrame = timeAtThisFrame;
+
+
+  this.textureRunningTime += dt;
+  if (this.textureRunningTime > .05) {
+    this.textureRunningTime = 0;
+    this.textureOffsetX += 1;
+  }
+
+
+  if (this.textureOffsetX > 5) {this.textureOffsetX = 0; this.textureOffsetY += 1;}
+  if (this.textureOffsetY > 5) {this.textureOffsetY = 0;}
+  console.log(this.textureOffsetX, this.textureOffsetY);
+
+  this.textureOffset = new Vec2(this.textureOffsetX, this.textureOffsetY);
+  this.textureMaterial.textureOffset.set(this.textureOffset);
 
   // clear the screen
   gl.clearColor(1.0, 1.0, 1.0, 1.0);
