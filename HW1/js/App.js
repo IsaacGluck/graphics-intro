@@ -39,10 +39,11 @@ App.prototype.resize = function() {
 
 App.prototype.registerEventHandlers = function() {
 	let theApp = this;
+
 	document.onkeydown = function(event) {
 		theApp.keysPressed[keyboardMap[event.keyCode]] = true;
-
 	};
+
 	document.onkeyup = function(event) {
 		if (theApp.keysPressed["Q"]) {
 			theApp.scene.stopQuake();
@@ -63,6 +64,9 @@ App.prototype.registerEventHandlers = function() {
 		startY = coordVec.y;
 
 		let swapIndex = theApp.scene.coordToIndex(startX, startY, theApp.canvas);
+
+		// console.log(theApp.scene.columnAbove(swapIndex));
+		
 		if (swapIndex >= 0) {
 			theApp.swapIndex = swapIndex;
 			theApp.swapOldX = theApp.scene.gameObjects[theApp.swapIndex].position.storage[0];
@@ -122,6 +126,12 @@ App.prototype.registerEventHandlers = function() {
 
 		if (theApp.swapIndex >= 0 && newIndex >= 0) {
 			theApp.scene.swap(theApp.swapIndex, newIndex);
+
+			if (!theApp.scene.threeInRow(theApp.swapIndex).anyToDelete && !theApp.scene.threeInRow(newIndex).anyToDelete) {
+				theApp.scene.swap(theApp.swapIndex, newIndex);
+			}
+
+
 			theApp.scene.drawBoard(theApp.scene.boardSize);
 
 			theApp.swapIndex = -1;

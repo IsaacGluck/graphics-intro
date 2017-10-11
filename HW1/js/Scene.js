@@ -40,7 +40,6 @@ let Scene = function(gl) {
   this.gameObjects = [];
   this.createBoard(this.boardSize);
   this.drawBoard(this.boardSize);
-
 };
 
 // creates 1D array of size boardSize*boarSize
@@ -72,6 +71,26 @@ Scene.prototype.generateRandomShape = function() {
   }
 };
 
+Scene.prototype.generateSpecificShape = function(type) {
+  switch(type) {
+    case this.TRIANGLE:
+    return new GameObject(new Mesh(this.triangleGeometry, this.normalMaterial), this.TRIANGLE);
+    break;
+    case this.SQUARE:
+    return new GameObject(new Mesh(this.squareGeometry, this.normalMaterial), this.SQUARE);
+    break;
+    case this.STAR:
+    return new GameObject(new Mesh(this.starGeometry, this.normalMaterial), this.STAR);
+    break;
+    case this.HEART:
+    return new GameObject(new Mesh(this.heartGeometry, this.heartMaterial), this.HEART);      
+    break;
+    case this.CIRCLE:
+    return new GameObject(new Mesh(this.circleGeometry, this.normalMaterial), this.CIRCLE);      
+    break;
+  }
+};
+
 Scene.prototype.drawBoard = function(boardSize) {
   let boardWidth = 1.7;
   let offset = boardWidth/2 - .075;
@@ -85,7 +104,6 @@ Scene.prototype.drawBoard = function(boardSize) {
     }
   }
 };
-
 
 Scene.prototype.coordToIndex = function(canvasX, canvasY, canvas) {
   let retIndex = -1;
@@ -102,31 +120,143 @@ Scene.prototype.coordToIndex = function(canvasX, canvasY, canvas) {
   });
 
   return retIndex;
-}
+};
 
 Scene.prototype.swap = function(index1, index2) {
   let temp = this.gameObjects[index2];
   this.gameObjects[index2] = this.gameObjects[index1];
   this.gameObjects[index1] = temp;
-}
+};
 
-Scene.prototype.disappear = function(index) {
-  this.gameObjects[index].disappear = true;
-}
+Scene.prototype.disappear = function(index) { this.gameObjects[index].disappear = true; };
 
 Scene.prototype.replace = function(index) {
-  let oldPosition = this.gameObjects[index].oldPosition;
+  let newIndex = Math.floor(index/10) * 10 + 9;
+  let oldPosition = this.gameObjects[newIndex].oldPosition;
 
-  this.gameObjects[index] = this.generateRandomShape();
-  this.gameObjects[index].position = oldPosition;
+  let columnAbove = this.columnAbove(index);
+  // console.log("index: " + index, columnAbove);
+  for (var i = 0; i < columnAbove.length; i++) {
+    this.downOne(columnAbove[i]);
+  }
+
+  this.gameObjects[newIndex] = this.generateRandomShape();
+  this.gameObjects[newIndex].position = oldPosition;
+  this.gameObjects[newIndex].oldPosition = oldPosition;
+
+
+};
+
+Scene.prototype.downOne = function(index) {
+  let newIndex = index - 1;
+  let temp = this.generateSpecificShape(this.gameObjects[index].type);
+  temp.position = this.gameObjects[newIndex].position;
+  temp.oldPosition = this.gameObjects[newIndex].position;
+
+  // temp.movingDown = true;
+  // temp.movingDownGoal = this.gameObjects[newIndex].position;
+  // temp.position = this.gameObjects[index].position;
+
+  this.gameObjects[newIndex] = temp;
+  // console.log(temp);
 }
 
 Scene.prototype.stopQuake = function() {
   this.camera.rotate(0);
   this.camera.updateViewProjMatrix();
+};
+
+Scene.prototype.threeInRow = function(index) {
+  let retObject = {
+    anyToDelete: false,
+    indicesToDelete: [],
+  };
+
+  let rightLeft = [];
+  let upDown = [];
+
+  if (index < 0 || index > 99) {
+    return retObject;
+  }
+
+  let currentType = this.gameObjects[index].type;
+
+  // right
+  let checkIndex = index + 10;
+  while (checkIndex <= 99) {
+    if (this.gameObjects[checkIndex].type == currentType) {
+      rightLeft.push(checkIndex);
+      checkIndex += 10;
+    } else {
+      break;
+    }
+  }
+
+  // left
+  checkIndex = index - 10;
+  while (checkIndex >= 0) {
+    if (this.gameObjects[checkIndex].type == currentType) {
+      rightLeft.push(checkIndex);
+      checkIndex -= 10;
+    } else {
+      break;
+    }
+  }
+
+  if (rightLeft.length >= 2) {
+    retObject.anyToDelete = true;
+  } else {
+    rightLeft = [];
+  }
+
+  // up
+  checkIndex = index + 1;
+  while (Math.floor(checkIndex/10) == Math.floor(index/10) && checkIndex <= 99) {
+    if (this.gameObjects[checkIndex].type == currentType) {
+      upDown.push(checkIndex);
+      checkIndex++;
+    } else {
+      break;
+    }
+  }
+
+  // down
+  checkIndex = index - 1;
+  while (Math.floor(checkIndex/10) == Math.floor(index/10) && checkIndex >= 0) {
+    if (this.gameObjects[checkIndex].type == currentType) {
+      upDown.push(checkIndex);
+      checkIndex--;
+    } else {
+      break;
+    }
+  }
+
+  if (upDown.length >= 2) {
+    retObject.anyToDelete = true;
+  } else {
+    upDown = [];
+  }
+
+  retObject.indicesToDelete = rightLeft.concat(upDown);
+
+  if (retObject.anyToDelete) {
+    retObject.indicesToDelete.push(index);
+  }
+
+  return retObject;
 }
 
+Scene.prototype.columnAbove = function(index) {
+  let retArray = [];
 
+  let checkIndex = index + 1;
+  while (Math.floor(checkIndex/10) == Math.floor(index/10) && checkIndex <= 99) {
+    retArray.push(checkIndex);
+    checkIndex++;
+  }
+
+  return retArray;
+}
 
 
 Scene.prototype.update = function(gl, keysPressed) {
@@ -180,15 +310,25 @@ Scene.prototype.update = function(gl, keysPressed) {
 
 
   this.gameObjects.forEach( function(gameObject, index) {
-    
-    // Rotate Square
+    // Rotate Square GYRO
     if(gameObject.type === theScene.SQUARE) {
       gameObject.rotate(theScene.squareRotateChange);
     }
 
+    // THREE IN A ROW
+    if (gameObject.disappear != true) {
+      let threeInRow = theScene.threeInRow(index);
+      if (threeInRow.anyToDelete) {
+        for (var i = 0; i < threeInRow.indicesToDelete.length; i++) {
+          theScene.disappear(threeInRow.indicesToDelete[i]);
+        }
+      }
+    }
+    
+
     // DRAMATIC EXIT
     if (gameObject.disappear == true) {
-      gameObject.rotate(theScene.squareRotateChange);
+      gameObject.rotate(theScene.squareRotateChange + .02);
       let oldScale = gameObject.scale;
       gameObject.scale = oldScale.add(new Vec3(-.01, -.01, 0));
     }
@@ -197,9 +337,7 @@ Scene.prototype.update = function(gl, keysPressed) {
     }
     if (gameObject.replace == true && gameObject.disappear == true) {
       theScene.replace(index);
-      // console.log(theScene.coordToIndex(gameObject.position.x), theScene.coordToIndex(gameObject.position.y), gameObject.type);
     }
-
 
     gameObject.draw(theScene.camera);
   });

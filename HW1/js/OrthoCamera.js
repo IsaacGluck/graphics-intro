@@ -26,4 +26,4 @@ OrthoCamera.prototype.setAspectRatio = function(ar)
 
 OrthoCamera.prototype.rotate = function(phi) {
   this.rotation = phi + this.stableRotation;
-}
+};

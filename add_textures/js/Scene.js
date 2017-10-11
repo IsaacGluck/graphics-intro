@@ -10,7 +10,7 @@ let Scene = function(gl) {
   this.fsTextured = new Shader(gl, gl.FRAGMENT_SHADER, "textured_fs.essl");
   this.texturedProgram = new TexturedProgram(gl, this.vsTextured, this.fsTextured);
 
-  this.texture2D = new Texture2D(gl, "img/asteroid.png");
+  this.texture2D = new Texture2D(gl, "img/boom.png");
 
   this.textureMaterial = new Material(gl, this.texturedProgram);
   this.textureMaterial.colorTexture.set(this.texture2D);
@@ -20,7 +20,7 @@ let Scene = function(gl) {
   
 
   this.triangleGeometry = new TriangleGeometry(gl);
-  this.quadGeometry = new TexturedQuadGeometry(gl);
+  this.texturedQuadGeometry = new TexturedQuadGeometry(gl);
 
   this.timeAtLastFrame = new Date().getTime();
 
@@ -42,7 +42,7 @@ let Scene = function(gl) {
   this.gameObjects.push(new GameObject(new Mesh(this.triangleGeometry, this.material)));
   this.gameObjects.push(new GameObject(new Mesh(this.triangleGeometry, this.material)));
   this.gameObjects.push(new GameObject(new Mesh(this.triangleGeometry, this.material)));
-  this.gameObjects.push(new GameObject(new Mesh(this.quadGeometry, this.textureMaterial)));
+  this.gameObjects.push(new GameObject(new Mesh(this.texturedQuadGeometry, this.textureMaterial)));
 
   this.gameObjects.forEach( function(gameObject, index) {  
     gameObject.mode = index;

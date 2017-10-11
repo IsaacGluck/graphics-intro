@@ -11,7 +11,6 @@ let GameObject = function(mesh, type) {
   this.replace = false;
   this.oldPosition = this.position;
 
-
   this.modelMatrix = new Mat4(); 
 };
 
@@ -30,4 +29,4 @@ GameObject.prototype.draw = function(camera){
 
 GameObject.prototype.rotate = function(phi) {
   this.orientation += phi;
-}
+};
