@@ -1,0 +1,24 @@
+Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `
+	precision highp float;
+
+	// varying vec2 texCoord;
+	varying vec3 worldNormal;
+	varying vec3 worldPos;
+	varying vec3 viewDir;
+
+	uniform sampler2D probeTexture;
+
+
+	void main(void) {
+
+		// compute ideal reflected direction
+		vec3 reflDir = reflect(normalize(-1.0 * viewDir), normalize(worldNormal));
+		
+		//find corresponding point in light probe
+		vec3 sphereSurfacePos = normalize(vec3(0.0, 0.0, 1.0) + reflDir) / 2.0; // average the reflDir and the original view point
+
+		vec2 probeTex = vec2(sphereSurfacePos.x, -1.0 * sphereSurfacePos.y) + vec2(0.5, 0.5);
+		
+		gl_FragColor = texture2D(probeTexture, probeTex);
+	}
+`;
