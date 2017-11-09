@@ -1,0 +1,59 @@
+Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `
+	precision highp float;
+
+	varying vec2 texCoord;
+	uniform sampler2D colorTexture;
+
+	varying vec3 worldNormal;
+	varying vec3 worldPos;
+
+	// Lighting
+	// uniform vec4 lightPowerDensity;
+	// uniform vec3 lightDirection;
+	
+	uniform vec4 lightPos[2];
+	uniform vec3 lightPowerDensity[2];
+	uniform vec3 spotDir[2];
+
+
+	void main(void) {
+		vec3 light = vec3(0, 0, 0);
+
+		for(int i = 0; i < 2; i++) {
+			vec3 lightDir  = lightPos[i].xyz - (worldPos * lightPos[i].w);
+			float cos = dot(normalize(worldNormal), normalize(lightDir));
+			vec3 middle = lightPowerDensity[i] / dot(lightDir,lightDir);
+			float spotLight = max(dot(normalize(lightDir), normalize(spotDir[i])), 0.0);
+
+			light += max(cos, 0.0) * texture2D(colorTexture, texCoord).rgb * middle * pow(spotLight, 3.0);
+
+		}
+
+		
+		gl_FragColor = vec4(light, 1);
+
+
+		// float cos = dot(normalize(worldNormal), normalize(lightDirection));
+		// gl_FragColor = lightPowerDensity * vec4(max(cos, 0.0) * texture2D(colorTexture, texCoord).rgb, 1);
+
+
+		// gl_FragColor = texture2D(colorTexture, texCoord); // NORMAL
+		// gl_FragColor = vec4(abs(normalize(worldNormal)), 1); // RGB
+	}
+`;
+
+
+// lightpos to calc dir - light dir = lightpos[i].xyz - (worldpos * lightpos[i].w)
+// directional - 4th entry 0
+// point - 4th entry 1
+
+// vec4 baseColor = texture2D(colorTexture, texCoord);
+// vec3 apparentColor = vec3(0,0,0);
+// for (int i = 0; i < 2; i++) {
+// 	vec3 lightDir = lightPos[i].xyz - (worldPos * lightPos[i].w);
+// 	float cos = dot(normalize(worldNormal), normalize(lightDir));
+// 	vec3 M = lightPowerDensity[i] / dot(lightDir,lightDir);
+// 	float spotLight = max(dot(normalize(-1.0 * lightDir),normalize(spotMainDir[i])),0.0);
+// 	apparentColor = apparentColor + max(cos, 0.0) * baseColor.xyz * M * pow(spotLight,5.0);
+// }
+// gl_FragColor = vec4(apparentColor, 1);

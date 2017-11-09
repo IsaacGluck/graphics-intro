@@ -1,0 +1,10 @@
+Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `
+	precision highp float;
+	varying vec2 texCoord; // pass this on from vertex shader
+	uniform sampler2D colorTexture;
+	uniform vec2 textureOffset;
+
+	void main(void) {
+		gl_FragColor = texture2D(colorTexture, texCoord);
+	}
+`;
