@@ -1,0 +1,196 @@
+Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `
+	precision highp float;
+	uniform vec3 cameraPos;
+
+	varying vec3 rayDir;
+	uniform sampler2D probeTexture;
+
+
+	uniform vec4 lightPos[2];
+	uniform vec3 lightPowerDensity[2];
+	uniform vec3 spotDir[2];
+
+	uniform mat4 quadrics[32];
+	uniform vec4 brdfs[16];
+
+
+
+	float intersectQuadric(mat4 A, vec4 e, vec4 d) {
+		float a = dot(d * A, d);
+		float b = dot(d * A, e) + dot(e * A, d);
+		float c = dot(e * A, e);
+
+		float discriminent = pow(b, 2.0) - 4.0*a*c;
+		if (discriminent < 0.0) {
+			return -1.0; // no intersection
+		}
+
+		float t1 = ((-1.0 * b) + sqrt(discriminent)) / (2.0*a);
+		float t2 = ((-1.0 * b) - sqrt(discriminent)) / (2.0*a);
+
+		if (t1 < 0.0) {
+			return t2;
+		} else if (t2 < 0.0) {
+			return t1;
+		} else {
+			if (t1 < t2) {
+				return t1;
+			} else {
+				return t2;
+			}
+		}
+	}
+
+	float intersectClippedQuadric(mat4 A, mat4 B, vec4 e, vec4 d) {
+		float a = dot(d * A, d);
+		float b = dot(d * A, e) + dot(e * A, d);
+		float c = dot(e * A, e);
+
+		float discriminent = pow(b, 2.0) - 4.0*a*c;
+		if (discriminent < 0.0) {
+			return -1.0; // no intersection
+		}
+
+		float t1 = ((-1.0 * b) + sqrt(discriminent)) / (2.0*a);
+		float t2 = ((-1.0 * b) - sqrt(discriminent)) / (2.0*a);
+
+		vec4 h1 = e + (d * t1);
+		vec4 h2 = e + (d * t2);
+
+		// In the clipped shape?
+		if (dot(h1 * B, h1) > 0.0) {
+			t1 = -1.0;
+		}
+
+		if (dot(h2 * B, h2) > 0.0) {
+			t2 = -1.0;
+		}
+		///////////
+
+		if (t1 < 0.0) {
+			return t2;
+		} else if (t2 < 0.0) {
+			return t1;
+		} else {
+			if (t1 < t2) {
+				return t1;
+			} else {
+				return t2;
+			}
+		}
+	}
+
+	vec4 diffuseShading(vec3 normal, vec4 intersection) {
+		vec3 baseColor = vec3(1.0, 1.0, 1.0);
+		vec3 light = vec3(0, 0, 0);
+		for(int i = 0; i < 1; i++) {
+			vec3 lightDir  = lightPos[i].xyz - (intersection.xyz * lightPos[i].w);
+			float cos = dot(normalize(normal), normalize(lightDir));
+			vec3 middle = lightPowerDensity[i] / dot(lightDir,lightDir);
+			float spotLight = max(dot(normalize(lightDir), normalize(spotDir[i])), 0.0);
+
+			light += max(cos, 0.0) * baseColor * middle * pow(spotLight, 3.0);
+
+		}
+		return vec4(light, 1.0);
+	}
+
+	vec4 shadeShiny(vec3 worldPos, vec3 worldNormal) {
+		vec3 baseColor = vec3(1.0, 1.0, 1.0);
+		vec3 apparentColor = vec3(0, 0, 0);
+		for (int i = 0; i < 1; i++) {
+			vec3 lightDir = lightPos[i].xyz - (worldPos * lightPos[i].w);
+			vec3 h = normalize(lightDir) + normalize(cameraPos - worldPos);
+			float cos = dot(normalize(worldNormal), normalize(h));
+			float shininess = pow(max(cos, 0.0),6.0);
+			vec3 middle = lightPowerDensity[i] / dot(lightDir,lightDir);
+			float spotLight = max(dot(normalize(lightDir),normalize(spotDir[i])),0.0);
+
+			apparentColor = apparentColor + shininess * baseColor * middle * pow(spotLight,3.0);
+		}
+		return vec4(apparentColor, 1);
+	}	
+
+	bool findBestHit(vec4 e, vec4 d, out float bestT, out vec4 bestBrdf, out mat4 bestA) {
+		for(int i = 0; i < 32; i+=2) {
+			float tempT = intersectClippedQuadric(quadrics[i], quadrics[i + 1], e, d);
+			
+			if (i == 0) {
+				bestT = tempT;
+				bestBrdf = brdfs[i/2];
+				bestA = quadrics[i];
+			} else if (bestT < 0.0) {
+				bestT = tempT;
+				bestBrdf = brdfs[i/2];
+				bestA = quadrics[i];
+			} else if (tempT > 0.0 && tempT < bestT) {
+				bestT = tempT;
+				bestBrdf = brdfs[i/2];
+				bestA = quadrics[i];
+			}
+		}
+
+		return (bestT > 0.0);
+	}
+
+	void main(void) {
+		vec4 e = vec4(cameraPos, 1.0);
+		vec4 d = vec4(rayDir, 0.0);
+		float bestT;
+		vec4 bestBrdf;
+		mat4 bestA;
+
+		bool testPoint = findBestHit(e, d, bestT, bestBrdf, bestA);
+
+		if (!testPoint) { // no intersection, shade as normal
+			//find corresponding point in light probe
+			vec3 sphereSurfacePos = normalize(vec3(0.0, 0.0, 1.0) + normalize(rayDir)) / 2.0; // average the reflDir and the original view point
+			vec2 probeTex = vec2(sphereSurfacePos.x, -1.0 * sphereSurfacePos.y) + vec2(0.5, 0.5);
+			gl_FragColor = texture2D(probeTexture, probeTex);
+		} else { // intersection, draw the color
+			vec4 intersectionPoint = e + (d * bestT);
+			vec3 quadricNormal = normalize((bestA*intersectionPoint + intersectionPoint*bestA).xyz);
+
+			gl_FragColor = shadeShiny(intersectionPoint.xyz, quadricNormal);
+		}
+	}
+`;
+
+
+// 		vec4 e = vec4(cameraPos, 1.0);
+// 		vec4 d = vec4(rayDir, 0.0);
+// 		float t = intersectClippedQuadric(quadrics[0], quadrics[1], e, d);
+
+// 		if (t < 0.0) { // no intersection, shade as normal
+// 			//find corresponding point in light probe
+// 			vec3 sphereSurfacePos = normalize(vec3(0.0, 0.0, 1.0) + normalize(rayDir)) / 2.0; // average the reflDir and the original view point
+// 			vec2 probeTex = vec2(sphereSurfacePos.x, -1.0 * sphereSurfacePos.y) + vec2(0.5, 0.5);
+// 			gl_FragColor = texture2D(probeTexture, probeTex);
+// 		} else { // intersection, draw the color
+// 			vec4 intersectionPoint = e + (d * t);
+// 			vec3 quadricNormal = normalize((quadrics[0]*intersectionPoint + intersectionPoint*quadrics[0]).xyz);
+
+// 			gl_FragColor = shadeShiny(intersectionPoint.xyz, quadricNormal);
+// 		}
+
+
+
+
+
+// mat4 A = mat4(1, 0, 0, 0,
+// 							0, 1, 0, 0,
+// 							0, 0, 1, 0,
+// 							0, 0, 0, -9);
+// mat4 B = mat4(	1, 0, 0, 0,
+// 								0, 0, 0, 0,
+// 								0, 0, 0, 0,
+// 								0, 0, 0, -4);
+
+// float t = intersectQuadric(A, e, d);
+
+// gl_FragColor = diffuseShading(quadricNormal, intersectionPoint);
+// gl_FragColor = vec4(dot(quadricNormal, rayDir) * rayDir, 1.0);
+
+
+
+

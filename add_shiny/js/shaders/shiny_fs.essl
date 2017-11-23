@@ -3,7 +3,7 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `
 
 	// varying vec2 texCoord;
 	varying vec3 worldNormal;
-	varying vec3 worldPos;
+	// varying vec3 worldPos;
 	varying vec3 viewDir;
 
 	uniform sampler2D probeTexture;

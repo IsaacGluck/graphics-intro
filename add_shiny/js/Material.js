@@ -68,3 +68,23 @@ Object.defineProperty(Material,
 Object.defineProperty(Material,
  "cameraPos", {value: new Vec3()} );
 
+Object.defineProperty(Material,
+ "rayDirMatrix", {value: new Mat4()} );
+
+Object.defineProperty(Material,
+ "lightPos", {value: new Vec4Array(2)} );
+
+Object.defineProperty(Material,
+ "lightPowerDensity", {value: new Vec3Array(2)} );
+
+Object.defineProperty(Material,
+ "spotDir", {value: new Vec3Array(2)} );
+
+Object.defineProperty(Material,
+ "quadrics", {value: new Mat4Array(32)} );
+
+Object.defineProperty(Material,
+ "brdfs", {value: new Vec4Array(16)} );
+
+
+

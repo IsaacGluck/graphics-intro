@@ -4,44 +4,94 @@ let Scene = function(gl) {
   // Enable Depth Test
   gl.enable(gl.DEPTH_TEST);
 
-  // Normal Colors
-  this.vsIdle = new Shader(gl, gl.VERTEX_SHADER, "idle_vs.essl");
-  this.fsSolid = new Shader(gl, gl.FRAGMENT_SHADER, "solid_fs.essl");
-  this.solidProgram = new Program(gl, this.vsIdle, this.fsSolid);
-
-  // 3D
-  // this.vsTextured3D = new Shader(gl, gl.VERTEX_SHADER, "textured_vs3D.essl");
-  // this.fsTextured3D = new Shader(gl, gl.FRAGMENT_SHADER, "textured_fs3D.essl");
+  // Shiny
   this.shiny_vs = new Shader(gl, gl.VERTEX_SHADER, "shiny_vs.essl");
   this.shiny_fs = new Shader(gl, gl.FRAGMENT_SHADER, "shiny_fs.essl");
   this.texturedProgram3D = new TexturedProgram(gl, this.shiny_vs, this.shiny_fs);
   this.texture2DShiny = new Texture2D(gl, "img/envmaps/probe2017fall1.png");
-  // this.texture2DEye = new Texture2D(gl, "img/YadonEyeDh.png");
-  // this.texture2DBody = new Texture2D(gl, "img/YadonDh.png");
-
   this.materials3D = [new Material(gl, this.texturedProgram3D), new Material(gl, this.texturedProgram3D)];
   this.materials3D[0].probeTexture.set(this.texture2DShiny);
   this.materials3D[1].probeTexture.set(this.texture2DShiny);
-
   this.multiMesh = new MultiMesh(gl, "img/Slowpoke.json", this.materials3D);
   this.slowPoke1 = new GameObject(this.multiMesh);
   this.slowPoke1.position.set(new Vec3(-6, -1, -17));
   this.slowPoke2 = new GameObject(this.multiMesh);
   this.slowPoke2.position.set(new Vec3(6, -1, -17));
 
+
+  this.envQuad_vs = new Shader(gl, gl.VERTEX_SHADER, "envQuad_vs.essl");
+  this.envQuad_fs = new Shader(gl, gl.FRAGMENT_SHADER, "envQuad_fs.essl");
+  this.envProgram = new Program(gl, this.envQuad_vs, this.envQuad_fs);
+  this.materialEnv = new Material(gl, this.envProgram);
+  this.materialEnv.probeTexture.set(this.texture2DShiny);
+  this.meshEnv = new Mesh(new SquareGeometry(gl), this.materialEnv);
+  this.envQuad = new GameObject(this.meshEnv);
+
   // Time
   this.timeAtLastFrame = new Date().getTime();
 
   // Light
-  Material.lightDirection.set(new Vec3(.5, 0, 0));
-  // this.lightSources = []
+  this.directionalLight = new Vec4(.5, 1, 0, 0);
+  // this.pointLight = new Vec4(this.chevyAvatar.position.clone()
+  //                             .addScaled(45, this.chevyAvatar.ahead)
+  //                             .addScaled(8, this.chevyAvatar.up), 1);
+  this.directionalLightPowerDensity = new Vec3(1, 1, 1);
+  // this.pointLightPowerDensity = new Vec3(2000, 2000, 200);
+
+
+  this.lightSources = [this.directionalLight, this.pointLight];
+  this.lightPowerDensities = [this.directionalLightPowerDensity,
+                              this.pointLightPowerDensity];
+
+  Material.lightPos.at(0).set(this.lightSources[0]);
+  // Material.lightPos.at(1).set(this.lightSources[1]);
+
+  Material.lightPowerDensity.at(0).set(this.lightPowerDensities[0]);
+  // Material.lightPowerDensity.at(1).set(this.lightPowerDensities[1]);
+
+  Material.spotDir.at(0).set(new Vec3(.5, 1, 0));
+  // Material.spotDir.at(1).set(this.chevyAvatar.ahead.clone());
+
+
+  // QUADRICS
+  //shape
+  Material.quadrics.at(0).set(
+      1, 0, 0, 0,
+      0, 1, 0, 0,
+      0, 0, 1, 0,
+      0, 0, 0, -1).scale(1, 1, 1);
+  //clipper
+  Material.quadrics.at(1).set(
+      1, 0, 0, 0,
+      0, 1, 0, 0,
+      0, 0, 1, 0,
+      0, 0, 0, -1).scale(0, 0, 0);
+  //material
+  Material.brdfs.at(0).set(1, 1, 1, 0); 
+
+   //shape
+  Material.quadrics.at(2).set(
+      1, 0, 0, 0,
+      0, 1, 0, 0,
+      0, 0, 1, 0,
+      0, 0, 0, -1).scale(1, 0, 1);
+  //clipper
+  Material.quadrics.at(3).set(
+      1, 0, 0, 0,
+      0, 1, 0, 0,
+      0, 0, 1, 0,
+      0, 0, 0, -1).scale(1, 1, 0);
+  //material
+  Material.brdfs.at(1).set(1, 1, 1, 0); 
+
   
   // Camera
   this.camera = new PerspectiveCamera();
 
   this.gameObjects = [];
-  this.gameObjects.push(this.slowPoke1);
-  this.gameObjects.push(this.slowPoke2);
+  // this.gameObjects.push(this.slowPoke1);
+  // this.gameObjects.push(this.slowPoke2);
+  this.gameObjects.push(this.envQuad);
 };
 
 Scene.prototype.update = function(gl, keysPressed) {
