@@ -52,6 +52,9 @@ let Scene = function(gl) {
   Material.spotDir.at(0).set(new Vec3(.5, 1, 0));
   // Material.spotDir.at(1).set(this.chevyAvatar.ahead.clone());
 
+  this.quadricsArray = [];
+  ClippedQuadric king = new ClippedQuadric();
+
 
   // QUADRICS
   //shape
