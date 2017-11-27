@@ -57,32 +57,32 @@ let Scene = function(gl) {
   //shape
   Material.quadrics.at(0).set(
       1, 0, 0, 0,
-      0, 1, 0, 0,
+      0, -1, 0, 0,
       0, 0, 1, 0,
-      0, 0, 0, -1).scale(1, 1, 1);
+      0, 0, 0, 0);
   //clipper
   Material.quadrics.at(1).set(
-      1, 0, 0, 0,
-      0, 1, 0, 0,
-      0, 0, 1, 0,
-      0, 0, 0, -1).scale(0, 0, 0);
+      0, 0, 0, 0,
+      0, 1, 0, 1,
+      0, 0, 0, 0,
+      0, 0, 0, 0);
   //material
   Material.brdfs.at(0).set(1, 1, 1, 0); 
 
    //shape
-  Material.quadrics.at(2).set(
-      1, 0, 0, 0,
-      0, 1, 0, 0,
-      0, 0, 1, 0,
-      0, 0, 0, -1).scale(1, 0, 1);
-  //clipper
-  Material.quadrics.at(3).set(
-      1, 0, 0, 0,
-      0, 1, 0, 0,
-      0, 0, 1, 0,
-      0, 0, 0, -1).scale(1, 1, 0);
-  //material
-  Material.brdfs.at(1).set(1, 1, 1, 0); 
+  // Material.quadrics.at(2).set(
+  //     1, 0, 0, 0,
+  //     0, 1, 0, 0,
+  //     0, 0, 1, 0,
+  //     0, 0, 0, -1).scale(1, 0, 1);
+  // //clipper
+  // Material.quadrics.at(3).set(
+  //     1, 0, 0, 0,
+  //     0, 1, 0, 0,
+  //     0, 0, 1, 0,
+  //     0, 0, 0, -1).scale(1, 1, 0);
+  // //material
+  // Material.brdfs.at(1).set(1, 1, 1, 0); 
 
   
   // Camera
