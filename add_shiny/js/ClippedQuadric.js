@@ -32,7 +32,7 @@ ClippedQuadric.prototype.setUnitCylinder = function(){
 ClippedQuadric.prototype.setUnitCone = function(){
   this.surfaceCoeffMatrix.set(	
   	1, 0, 0, 0,
-    0, -1, 0, 0,
+    0, -.8, 0, 0,
     0, 0, 1, 0,
     0, 0, 0, 0);
   this.clipperCoeffMatrix.set(	

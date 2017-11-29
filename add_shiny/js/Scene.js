@@ -11,7 +11,7 @@ let Scene = function(gl) {
   
   // Quadrics Array
   this.quadricsArray = [];
-  this.maxQuadrics = 96;
+  this.maxQuadrics = 104;
 
   // Pawns 0-63
   this.makePawns();
@@ -25,6 +25,14 @@ let Scene = function(gl) {
   // Bishops 80 - 95
   this.makeBishops();
 
+  // Rooks 96 - 104
+  //   mcc: 4 - 27
+  this.makeRook(-7, 7, 3);
+  this.makeRook(-7, -7, 12);
+  this.makeRook(7, -7, 21);
+  this.makeRook(7, 7, 30);
+
+
   // QUADRICS ARRAY TO MATERIAL UNIFORM
   this.quadricsCounter = 0;
   for (var i = 0; i < this.quadricsArray.length; i++) {
@@ -36,9 +44,10 @@ let Scene = function(gl) {
   }
 
   /////// NOT DEALT WITH YET
-  // MATERIAL 
-  // Material.brdfs.at(0).set(1, 1, 1, 0); 
-  // Material.brdfs.at(1).set(1, 1, 1, 0);
+  // MATERIAL
+  for (var i = 0; i < 52; i++) {
+    Material.brdfs.at(i).set(1, 1, 1, 0);
+  }
 };
 
 Scene.prototype.setup = function(gl) {
@@ -79,26 +88,24 @@ Scene.prototype.setup = function(gl) {
 };
 
 Scene.prototype.lightInfo = function() {
-  this.directionalLight = new Vec4(0, 1, 0, 0);
-  // this.pointLight = new Vec4(this.chevyAvatar.position.clone()
-  //                             .addScaled(45, this.chevyAvatar.ahead)
-  //                             .addScaled(8, this.chevyAvatar.up), 1);
-  this.directionalLightPowerDensity = new Vec3(1, 1, 1);
-  // this.pointLightPowerDensity = new Vec3(2000, 2000, 200);
+  this.directionalLight = new Vec4(.5, .5, 0, 0);
+  this.pointLight = new Vec4(-3, 7, 7, 1);
 
+  this.directionalLightPowerDensity = new Vec3(.6, .6, .5);
+  this.pointLightPowerDensity = new Vec3(50, 50, 20);
 
   this.lightSources = [this.directionalLight, this.pointLight];
   this.lightPowerDensities = [this.directionalLightPowerDensity,
                               this.pointLightPowerDensity];
 
   Material.lightPos.at(0).set(this.lightSources[0]);
-  // Material.lightPos.at(1).set(this.lightSources[1]);
+  Material.lightPos.at(1).set(this.lightSources[1]);
 
   Material.lightPowerDensity.at(0).set(this.lightPowerDensities[0]);
-  // Material.lightPowerDensity.at(1).set(this.lightPowerDensities[1]);
+  Material.lightPowerDensity.at(1).set(this.lightPowerDensities[1]);
 
-  Material.spotDir.at(0).set(new Vec3(0, 1, 0));
-  // Material.spotDir.at(1).set(this.chevyAvatar.ahead.clone());
+  Material.spotDir.at(0).set(new Vec3(.5, .5, 0));
+  Material.spotDir.at(1).set(new Vec3(0, 1, 0));
 };
 
 Scene.prototype.boardSetup = function() {
@@ -130,7 +137,7 @@ Scene.prototype.makePawns = function() {
 
     let pawnTop = new ClippedQuadric(new Mat4(), new Mat4());
     pawnTop.setUnitCone();
-    pawnTop.transform(new Mat4().translate(i, 3.2, -5));
+    pawnTop.transform(new Mat4().translate(i, 3.4, -5));
 
     this.quadricsArray.push(pawn);
     this.quadricsArray.push(pawnTop);
@@ -143,7 +150,7 @@ Scene.prototype.makePawns = function() {
 
     let pawnTop = new ClippedQuadric(new Mat4(), new Mat4());
     pawnTop.setUnitCone();
-    pawnTop.transform(new Mat4().translate(i, 3.2, 5));
+    pawnTop.transform(new Mat4().translate(i, 3.4, 5));
 
     this.quadricsArray.push(pawn);
     this.quadricsArray.push(pawnTop);
@@ -160,7 +167,7 @@ Scene.prototype.makeKings = function() {
     1, 0, 0, 0,
     0, 0, 0, 0,
     0, 0, 1, 0,
-    0, 1, 0, 0);
+    0, .9, 0, 0);
   kingTop.clipperCoeffMatrix.set(  
     0, 0, 0, 0,
     0, 1, 0, 0,
@@ -179,7 +186,7 @@ Scene.prototype.makeKings = function() {
     1, 0, 0, 0,
     0, 0, 0, 0,
     0, 0, 1, 0,
-    0, 1, 0, 0);
+    0, .9, 0, 0);
   king2Top.clipperCoeffMatrix.set(  
     0, 0, 0, 0,
     0, 1, 0, 0,
@@ -376,6 +383,89 @@ Scene.prototype.makeBishops = function() {
   this.quadricsArray.push(bishop3Outside);
   this.quadricsArray.push(bishop4);
   this.quadricsArray.push(bishop4Outside);
+};
+
+Scene.prototype.makeRook = function(x, z, startingMccIndex) {
+  let rook = new ClippedQuadric(new Mat4(), new Mat4());
+  rook.surfaceCoeffMatrix.set(  
+    1, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 1, 0,
+    0, 0, 0, -.5);
+  rook.clipperCoeffMatrix.set(  
+    0, 0, 0, 0,
+    0, 1, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, -.7);
+  rook.transform(new Mat4().translate(x, 1.84, z));
+  this.quadricsArray.push(rook);
+
+
+  let rookTopSide1 = new ClippedTwiceQuadric(new Mat4(), new Mat4(), new Mat4());
+  rookTopSide1.surfaceCoeffMatrix.set(
+    1, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, -.5);
+  rookTopSide1.clipperCoeffMatrix.set(
+    0, 0, 0, 0,
+    0, 1, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, -.5);
+  rookTopSide1.clipperCoeffMatrix2.set(
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 1, 0,
+    0, 0, 0, -.5);
+  rookTopSide1.transform(new Mat4().translate(x, 2.8, z));
+
+  Material.mcc.at(startingMccIndex).set(rookTopSide1.surfaceCoeffMatrix);
+  Material.mcc.at(startingMccIndex + 1).set(rookTopSide1.clipperCoeffMatrix);
+  Material.mcc.at(startingMccIndex + 2).set(rookTopSide1.clipperCoeffMatrix2);
+
+  let rookTopBottom = new ClippedTwiceQuadric(new Mat4(), new Mat4(), new Mat4());
+  rookTopBottom.surfaceCoeffMatrix.set(
+    0, 0, 0, 0,
+    0, 1, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, -.5);
+  rookTopBottom.clipperCoeffMatrix.set(
+    1, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, -.5);
+  rookTopBottom.clipperCoeffMatrix2.set(
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 1, 0,
+    0, 0, 0, -.5);
+  rookTopBottom.transform(new Mat4().translate(x, 2.8, z));
+
+  Material.mcc.at(startingMccIndex + 3).set(rookTopBottom.surfaceCoeffMatrix);
+  Material.mcc.at(startingMccIndex + 4).set(rookTopBottom.clipperCoeffMatrix);
+  Material.mcc.at(startingMccIndex + 5).set(rookTopBottom.clipperCoeffMatrix2);
+
+  let rookTopSide2 = new ClippedTwiceQuadric(new Mat4(), new Mat4(), new Mat4());
+  rookTopSide2.surfaceCoeffMatrix.set(
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 1, 0,
+    0, 0, 0, -.5);
+  rookTopSide2.clipperCoeffMatrix.set(
+    0, 0, 0, 0,
+    0, 1, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, -.5);
+  rookTopSide2.clipperCoeffMatrix2.set(
+    1, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, -.5);
+  rookTopSide2.transform(new Mat4().translate(x, 2.8, z));
+
+  Material.mcc.at(startingMccIndex + 6).set(rookTopSide2.surfaceCoeffMatrix);
+  Material.mcc.at(startingMccIndex + 7).set(rookTopSide2.clipperCoeffMatrix);
+  Material.mcc.at(startingMccIndex + 8).set(rookTopSide2.clipperCoeffMatrix2);
 };
 
 Scene.prototype.update = function(gl, keysPressed) {

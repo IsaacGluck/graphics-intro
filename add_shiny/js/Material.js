@@ -81,11 +81,11 @@ Object.defineProperty(Material,
  "spotDir", {value: new Vec3Array(2)} );
 
 Object.defineProperty(Material,
- "quadrics", {value: new Mat4Array(96)} );
+ "quadrics", {value: new Mat4Array(104)} );
 
 Object.defineProperty(Material,
- "brdfs", {value: new Vec4Array(48)} );
+ "brdfs", {value: new Vec4Array(52)} );
 
 Object.defineProperty(Material,
- "mcc", {value: new Mat4Array(6)} );
+ "mcc", {value: new Mat4Array(39)} );
 
