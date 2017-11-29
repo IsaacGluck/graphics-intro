@@ -1,5 +1,13 @@
 "use strict";
 let Scene = function(gl) {
+  this.pawnCounter = 33;
+  this.pawnDown = true;
+  this.pawnGo = true;
+
+  this.bishopCounter = 65;
+  this.bishopDown = true;
+  this.bishopGo = false;
+
   // Shiny setup
   this.setup(gl);
 
@@ -31,6 +39,9 @@ let Scene = function(gl) {
   this.makeRook(-7, -7, 12);
   this.makeRook(7, -7, 21);
   this.makeRook(7, 7, 30);
+
+  // this.quadricsArray[6].transform(new Mat4().translate(0, 0, 4));
+  // this.quadricsArray[7].transform(new Mat4().translate(0, 0, 4));
 
 
   // QUADRICS ARRAY TO MATERIAL UNIFORM
@@ -88,10 +99,10 @@ Scene.prototype.setup = function(gl) {
 };
 
 Scene.prototype.lightInfo = function() {
-  this.directionalLight = new Vec4(.5, .5, 0, 0);
+  this.directionalLight = new Vec4(1, 1, -1, 0);
   this.pointLight = new Vec4(-3, 7, 7, 1);
 
-  this.directionalLightPowerDensity = new Vec3(.6, .6, .5);
+  this.directionalLightPowerDensity = new Vec3(.9, .9, .7);
   this.pointLightPowerDensity = new Vec3(50, 50, 20);
 
   this.lightSources = [this.directionalLight, this.pointLight];
@@ -104,7 +115,7 @@ Scene.prototype.lightInfo = function() {
   Material.lightPowerDensity.at(0).set(this.lightPowerDensities[0]);
   Material.lightPowerDensity.at(1).set(this.lightPowerDensities[1]);
 
-  Material.spotDir.at(0).set(new Vec3(.5, .5, 0));
+  Material.spotDir.at(0).set(new Vec3(1, 1, -1));
   Material.spotDir.at(1).set(new Vec3(0, 1, 0));
 };
 
@@ -381,6 +392,7 @@ Scene.prototype.makeBishops = function() {
   this.quadricsArray.push(bishop2Outside);
   this.quadricsArray.push(bishop3);
   this.quadricsArray.push(bishop3Outside);
+  console.log(this.quadricsArray.length);
   this.quadricsArray.push(bishop4);
   this.quadricsArray.push(bishop4Outside);
 };
@@ -480,6 +492,59 @@ Scene.prototype.update = function(gl, keysPressed) {
   gl.clearDepth(1.0);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
+  if (this.pawnGo) {
+    if (this.pawnCounter == 0 && this.pawnDown) {
+      this.pawnDown = !this.pawnDown;
+      this.pawnGo = false;
+      this.bishopGo = true;
+    } else if (this.pawnCounter == 33 && !this.pawnDown) {
+      this.pawnDown = !this.pawnDown;
+    } else if (this.pawnCounter > 0 && this.pawnDown) {
+      // console.log(this.quadricsArray[0]);
+      this.quadricsArray[6].transform(new Mat4().translate(0, 0, .125));
+      this.quadricsArray[7].transform(new Mat4().translate(0, 0, .125));
+      Material.quadrics.at(12).set(this.quadricsArray[6].surfaceCoeffMatrix);
+      Material.quadrics.at(13).set(this.quadricsArray[6].clipperCoeffMatrix);
+      Material.quadrics.at(14).set(this.quadricsArray[7].surfaceCoeffMatrix);
+      Material.quadrics.at(15).set(this.quadricsArray[7].clipperCoeffMatrix);
+      this.pawnCounter--;
+    } else if (this.pawnCounter >= 0 && !this.pawnDown) {
+      this.quadricsArray[6].transform(new Mat4().translate(0, 0, -.125));
+      this.quadricsArray[7].transform(new Mat4().translate(0, 0, -.125));
+      Material.quadrics.at(12).set(this.quadricsArray[6].surfaceCoeffMatrix);
+      Material.quadrics.at(13).set(this.quadricsArray[6].clipperCoeffMatrix);
+      Material.quadrics.at(14).set(this.quadricsArray[7].surfaceCoeffMatrix);
+      Material.quadrics.at(15).set(this.quadricsArray[7].clipperCoeffMatrix);
+      this.pawnCounter++;
+    }
+  }
+
+  if (this.bishopGo) {
+    if (this.bishopCounter == 0 && this.bishopDown) {
+      this.bishopDown = !this.bishopDown;
+    } else if (this.bishopCounter == 65 && !this.bishopDown) {
+      this.bishopDown = !this.bishopDown;
+      this.pawnGo = true;
+      this.bishopGo = false;
+    } else if (this.bishopCounter > 0 && this.bishopDown) {
+      // console.log(this.quadricsArray[0]);
+      this.quadricsArray[44].transform(new Mat4().translate(.125, 0, .125));
+      this.quadricsArray[45].transform(new Mat4().translate(.125, 0, .125));
+      Material.quadrics.at(88).set(this.quadricsArray[44].surfaceCoeffMatrix);
+      Material.quadrics.at(89).set(this.quadricsArray[44].clipperCoeffMatrix);
+      Material.quadrics.at(90).set(this.quadricsArray[45].surfaceCoeffMatrix);
+      Material.quadrics.at(91).set(this.quadricsArray[45].clipperCoeffMatrix);
+      this.bishopCounter--;
+    } else if (this.bishopCounter >= 0 && !this.bishopDown) {
+      this.quadricsArray[44].transform(new Mat4().translate(-.125, 0, -.125));
+      this.quadricsArray[45].transform(new Mat4().translate(-.125, 0, -.125));
+      Material.quadrics.at(88).set(this.quadricsArray[44].surfaceCoeffMatrix);
+      Material.quadrics.at(89).set(this.quadricsArray[44].clipperCoeffMatrix);
+      Material.quadrics.at(90).set(this.quadricsArray[45].surfaceCoeffMatrix);
+      Material.quadrics.at(91).set(this.quadricsArray[45].clipperCoeffMatrix);
+      this.bishopCounter++;
+    }
+  }
 
   let theScene = this;
 
