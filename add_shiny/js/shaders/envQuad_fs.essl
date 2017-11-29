@@ -10,36 +10,35 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `
 	uniform vec3 lightPowerDensity[2];
 	uniform vec3 spotDir[2];
 
-	uniform mat4 quadrics[32];
-	uniform vec4 brdfs[16];
+	uniform mat4 mcc[6];
+	uniform mat4 quadrics[96];
+	uniform vec4 brdfs[48];
 
+	// float intersectQuadric(mat4 A, vec4 e, vec4 d) {
+	// 	float a = dot(d * A, d);
+	// 	float b = dot(d * A, e) + dot(e * A, d);
+	// 	float c = dot(e * A, e);
 
+	// 	float discriminent = pow(b, 2.0) - 4.0*a*c;
+	// 	if (discriminent < 0.0) {
+	// 		return -1.0; // no intersection
+	// 	}
 
-	float intersectQuadric(mat4 A, vec4 e, vec4 d) {
-		float a = dot(d * A, d);
-		float b = dot(d * A, e) + dot(e * A, d);
-		float c = dot(e * A, e);
+	// 	float t1 = ((-1.0 * b) + sqrt(discriminent)) / (2.0*a);
+	// 	float t2 = ((-1.0 * b) - sqrt(discriminent)) / (2.0*a);
 
-		float discriminent = pow(b, 2.0) - 4.0*a*c;
-		if (discriminent < 0.0) {
-			return -1.0; // no intersection
-		}
-
-		float t1 = ((-1.0 * b) + sqrt(discriminent)) / (2.0*a);
-		float t2 = ((-1.0 * b) - sqrt(discriminent)) / (2.0*a);
-
-		if (t1 < 0.0) {
-			return t2;
-		} else if (t2 < 0.0) {
-			return t1;
-		} else {
-			if (t1 < t2) {
-				return t1;
-			} else {
-				return t2;
-			}
-		}
-	}
+	// 	if (t1 < 0.0) {
+	// 		return t2;
+	// 	} else if (t2 < 0.0) {
+	// 		return t1;
+	// 	} else {
+	// 		if (t1 < t2) {
+	// 			return t1;
+	// 		} else {
+	// 			return t2;
+	// 		}
+	// 	}
+	// }
 
 	float intersectClippedQuadric(mat4 A, mat4 B, vec4 e, vec4 d) {
 		float a = dot(d * A, d);
@@ -80,20 +79,64 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `
 		}
 	}
 
-	vec4 diffuseShading(vec3 normal, vec4 intersection) {
-		vec3 baseColor = vec3(1.0, 1.0, 1.0);
-		vec3 light = vec3(0, 0, 0);
-		for(int i = 0; i < 1; i++) {
-			vec3 lightDir  = lightPos[i].xyz - (intersection.xyz * lightPos[i].w);
-			float cos = dot(normalize(normal), normalize(lightDir));
-			vec3 middle = lightPowerDensity[i] / dot(lightDir,lightDir);
-			float spotLight = max(dot(normalize(lightDir), normalize(spotDir[i])), 0.0);
+	float intersectTwiceClippedQuadric(mat4 A, mat4 B, mat4 C, vec4 e, vec4 d) {
+		float a = dot(d * A, d);
+		float b = dot(d * A, e) + dot(e * A, d);
+		float c = dot(e * A, e);
 
-			light += max(cos, 0.0) * baseColor * middle * pow(spotLight, 3.0);
-
+		float discriminent = pow(b, 2.0) - 4.0*a*c;
+		if (discriminent < 0.0) {
+			return -1.0; // no intersection
 		}
-		return vec4(light, 1.0);
+
+		float t1 = ((-1.0 * b) + sqrt(discriminent)) / (2.0*a);
+		float t2 = ((-1.0 * b) - sqrt(discriminent)) / (2.0*a);
+
+		vec4 h1 = e + (d * t1);
+		vec4 h2 = e + (d * t2);
+
+		// In the clipped shape?
+		if (dot(h1 * B, h1) > 0.0) {
+			t1 = -1.0;
+		}
+		if (dot(h2 * B, h2) > 0.0) {
+			t2 = -1.0;
+		}
+		if (dot(h1 * C, h1) > 0.0) {
+			t1 = -1.0;
+		}
+		if (dot(h2 * C, h2) > 0.0) {
+			t2 = -1.0;
+		}
+		///////////
+
+		if (t1 < 0.0) {
+			return t2;
+		} else if (t2 < 0.0) {
+			return t1;
+		} else {
+			if (t1 < t2) {
+				return t1;
+			} else {
+				return t2;
+			}
+		}
 	}
+
+	// vec4 diffuseShading(vec3 normal, vec4 intersection) {
+	// 	vec3 baseColor = vec3(1.0, 1.0, 1.0);
+	// 	vec3 light = vec3(0, 0, 0);
+	// 	for(int i = 0; i < 1; i++) {
+	// 		vec3 lightDir  = lightPos[i].xyz - (intersection.xyz * lightPos[i].w);
+	// 		float cos = dot(normalize(normal), normalize(lightDir));
+	// 		vec3 middle = lightPowerDensity[i] / dot(lightDir,lightDir);
+	// 		float spotLight = max(dot(normalize(lightDir), normalize(spotDir[i])), 0.0);
+
+	// 		light += max(cos, 0.0) * baseColor * middle * pow(spotLight, 3.0);
+
+	// 	}
+	// 	return vec4(light, 1.0);
+	// }
 
 	vec4 shadeShiny(vec3 worldPos, vec3 worldNormal) {
 		vec3 baseColor = vec3(1.0, 1.0, 1.0);
@@ -109,17 +152,29 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `
 			apparentColor = apparentColor + shininess * baseColor * middle * pow(spotLight,3.0);
 		}
 		return vec4(apparentColor, 1);
+	}
+
+	vec4 shadeShinyWhite(vec3 worldPos, vec3 worldNormal) {
+		vec3 baseColor = vec3(0.0, 0.0, 0.0);
+		vec3 apparentColor = vec3(0, 0, 0);
+		for (int i = 0; i < 1; i++) {
+			vec3 lightDir = lightPos[i].xyz - (worldPos * lightPos[i].w);
+			vec3 h = normalize(lightDir) + normalize(cameraPos - worldPos);
+			float cos = dot(normalize(worldNormal), normalize(h));
+			float shininess = pow(max(cos, 0.0),6.0);
+			vec3 middle = lightPowerDensity[i] / dot(lightDir,lightDir);
+			float spotLight = max(dot(normalize(lightDir),normalize(spotDir[i])),0.0);
+
+			apparentColor = apparentColor + shininess * baseColor * middle * pow(spotLight,3.0);
+		}
+		return vec4(apparentColor, 1);
 	}	
 
-	bool findBestHit(vec4 e, vec4 d, out float bestT, out vec4 bestBrdf, out mat4 bestA) {
-		for(int i = 0; i < 32; i+=2) {
+	bool findBestHit(vec4 e, vec4 d, inout float bestT, out vec4 bestBrdf, out mat4 bestA) {
+		for(int i = 0; i < 96; i+=2) {
 			float tempT = intersectClippedQuadric(quadrics[i], quadrics[i + 1], e, d);
 			
-			if (i == 0) {
-				bestT = tempT;
-				bestBrdf = brdfs[i/2];
-				bestA = quadrics[i];
-			} else if (bestT < 0.0) {
+			if (bestT < 0.0) {
 				bestT = tempT;
 				bestBrdf = brdfs[i/2];
 				bestA = quadrics[i];
@@ -130,19 +185,100 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `
 			}
 		}
 
+		// doubly clipped quadric
+		for(int i = 0; i < 3; i+=3) {
+			float tempT = intersectTwiceClippedQuadric(mcc[i], mcc[i + 1], mcc[i+2], e, d);
+
+			 if (bestT < 0.0) {
+				bestT = tempT;
+				bestBrdf = brdfs[i/2];
+				bestA = mcc[i];
+			} else if (tempT > 0.0 && tempT < bestT) {
+				bestT = tempT;
+				bestBrdf = brdfs[i/2];
+				bestA = mcc[i];
+			}
+		}
+
 		return (bestT > 0.0);
 	}
+
+	float noise(vec3 r) {
+	  vec3 s = vec3(7502, 22777, 4767);
+	  float f = 0.0;
+	  for(int i=0; i<16; i++) {
+	    f += sin( dot(s - vec3(32768, 32768, 32768), r * 1.0) / 65536.0);
+	    s = mod(s, 32768.0) * 2.0 + floor(s / 32768.0);
+	  }
+	  return f / 32.0 + 0.5;
+	}
+
+	vec3 noiseGrad(vec3 r) {
+	  vec3 s = vec3(7502, 22777, 4767);
+	  vec3 f = vec3(0.0, 0.0, 0.0);
+	  for(int i=0; i<16; i++) {
+	    f += cos( dot(s - vec3(32768, 32768, 32768), r*40.0)
+	                   / 65536.0) * (s - vec3(32768, 32768, 32768)) * 40.0;
+	    s = mod(s, 32768.0) * 2.0 + floor(s / 32768.0);
+	  }
+	  return f / 65536.0;
+	}
+
+
+  // scale = 16;
+  // turbulence = 500;
+  // period = 8;
+  // sharpness = 10;
+
+  vec4 getWoodColor(vec3 position, float scale, float turbulence, float period, float sharpness) {
+	    float w = position.x * period + pow( noise(position * scale), sharpness) * turbulence; 
+	    
+	    w = mod(w, 1.0);
+	    
+	    vec3 color3 = (vec3(1.0, 0.3, 0.0) * w) + (vec3(0.35, 0.1, 0.05) * (1.0 - w));
+
+	    return vec4(color3, 1);
+  }
+
+  // scale = 32;
+  // turbulence = 50;
+  // period = 32;
+  // sharpness = 1;
+
+
+  vec4 getMarbleColor(vec3 position, float scale, float turbulence, float period, float sharpness) {
+	  float w = position.x * period + pow( noise(position * scale), sharpness)*turbulence;
+
+	  w = pow(sin(w)*0.5+0.5, 4.0); // use smooth sine for soft stripes
+
+	  vec3 color3 = vec3(0.0, 0.0, 0.0) * w + vec3(1.0, 1.0, 1.0) * (1.0-w); // veins + rock
+
+	  return vec4(color3, 1);;  
+  
+  }
+
+  // vec4 getMarbleColorInvert(vec3 position, float scale, float turbulence, float period, float sharpness) {
+	 //  float w = position.x * period + pow( noise(position * scale), sharpness)*turbulence;
+
+	 //  w = pow(sin(w)*0.5+0.5, 4.0); // use smooth sine for soft stripes
+
+	 //  vec3 color3 = vec3(1.0, 1.0, 1.0) * w + vec3(0.0, 0.0, 0.0) * (1.0-w); // veins + rock
+
+	 //  return vec4(color3, 1);;  
+  
+  // }
+
 
 	void main(void) {
 		vec4 e = vec4(cameraPos, 1.0);
 		vec4 d = vec4(rayDir, 0.0);
-		float bestT;
+		float bestT = 1000000000.0;
 		vec4 bestBrdf;
 		mat4 bestA;
 
 		bool testPoint = findBestHit(e, d, bestT, bestBrdf, bestA);
 
-		if (!testPoint) { // no intersection, shade as normal
+		if (!testPoint || bestT == 1000000000.0) { // no intersection, shade as normal
 			//find corresponding point in light probe
 			vec3 sphereSurfacePos = normalize(vec3(0.0, 0.0, 1.0) + normalize(rayDir)) / 2.0; // average the reflDir and the original view point
 			vec2 probeTex = vec2(sphereSurfacePos.x, -1.0 * sphereSurfacePos.y) + vec2(0.5, 0.5);
@@ -151,10 +287,48 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `
 			vec4 intersectionPoint = e + (d * bestT);
 			vec3 quadricNormal = normalize((bestA*intersectionPoint + intersectionPoint*bestA).xyz);
 
-			gl_FragColor = shadeShiny(intersectionPoint.xyz, quadricNormal);
+			if (abs(intersectionPoint.y - 1.0) < .001) { // board
+				float xCor = floor(intersectionPoint.x / 2.0);
+				float zCor = floor(intersectionPoint.z / 2.0);
+				if (mod((xCor + zCor), 2.0) < 0.5) {
+					// gl_FragColor = shadeShinyWhite(intersectionPoint.xyz, quadricNormal);
+					gl_FragColor = getWoodColor(intersectionPoint.xyz , 16.0, 500.0, 8.0, 10.0);
+				} else {
+					gl_FragColor = getMarbleColor(intersectionPoint.xyz , 32.0, 50.0, 32.0, 1.0);
+					// gl_FragColor = shadeShiny(intersectionPoint.xyz, quadricNormal);
+				}
+			} else if (abs(intersectionPoint.y + 1.0) < .001) { // get rid of secondary board
+				vec3 sphereSurfacePos = normalize(vec3(0.0, 0.0, 1.0) + normalize(rayDir)) / 2.0; // average the reflDir and the original view point
+				vec2 probeTex = vec2(sphereSurfacePos.x, -1.0 * sphereSurfacePos.y) + vec2(0.5, 0.5);
+				gl_FragColor = texture2D(probeTexture, probeTex);
+			} else {
+				gl_FragColor = shadeShiny(intersectionPoint.xyz, quadricNormal);
+			}	
 		}
 	}
 `;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 // 		vec4 e = vec4(cameraPos, 1.0);
