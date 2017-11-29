@@ -2,8 +2,8 @@
 let Scene = function(gl) {
   this.pawnCounter = 33;
   this.pawnDown = true;
-  // this.pawnGo = true;
-  this.pawnGo = false;
+  this.pawnGo = true;
+  // this.pawnGo = false;
 
   this.bishopCounter = 65;
   this.bishopDown = true;
@@ -22,7 +22,7 @@ let Scene = function(gl) {
   this.quadricsArray = [];
   this.maxQuadrics = 104;
 
-  // WHITE PIECES
+  // WHITE PIECES (0 - 51)
   // 0 - 31
   this.makeWhitePawns();
 
@@ -39,7 +39,7 @@ let Scene = function(gl) {
   this.makeWhiteRooks();
   
 
-  // BLACK PIECES
+  // BLACK PIECES (52 - 103)
   // 52 - 83
   this.makeBlackPawns();
 
@@ -54,32 +54,6 @@ let Scene = function(gl) {
 
   // 100 - 103
   this.makeBlackRooks();
-  
-
-
-
-  // Pawns 0-63
-  // this.makeBlackPawns();
-
-  // Kings 64 - 71
-  // this.makeBlackKing();
-
-  // Queens 72 - 79
-  // this.makeBlackQueen();
-
-  // Bishops 80 - 95
-  //black
-  // this.makeBlackBishops();
-
-  // Rooks 96 - 104
-  //   mcc: 4 - 27
-  //black
-  // this.makeRook(-7, 7, 3);
-  // this.makeRook(7, 7, 30);
-  
-
-  // this.quadricsArray[6].transform(new Mat4().translate(0, 0, 4));
-  // this.quadricsArray[7].transform(new Mat4().translate(0, 0, 4));
 
 
   // QUADRICS ARRAY TO MATERIAL UNIFORM
@@ -496,20 +470,20 @@ Scene.prototype.update = function(gl, keysPressed) {
       this.bishopGo = false;
     } else if (this.bishopCounter > 0 && this.bishopDown) {
       // console.log(this.quadricsArray[0]);
-      this.quadricsArray[44].transform(new Mat4().translate(.125, 0, .125));
-      this.quadricsArray[45].transform(new Mat4().translate(.125, 0, .125));
-      Material.quadrics.at(88).set(this.quadricsArray[44].surfaceCoeffMatrix);
-      Material.quadrics.at(89).set(this.quadricsArray[44].clipperCoeffMatrix);
-      Material.quadrics.at(90).set(this.quadricsArray[45].surfaceCoeffMatrix);
-      Material.quadrics.at(91).set(this.quadricsArray[45].clipperCoeffMatrix);
+      this.quadricsArray[22].transform(new Mat4().translate(.125, 0, .125));
+      this.quadricsArray[23].transform(new Mat4().translate(.125, 0, .125));
+      Material.quadrics.at(44).set(this.quadricsArray[22].surfaceCoeffMatrix);
+      Material.quadrics.at(45).set(this.quadricsArray[22].clipperCoeffMatrix);
+      Material.quadrics.at(46).set(this.quadricsArray[23].surfaceCoeffMatrix);
+      Material.quadrics.at(47).set(this.quadricsArray[23].clipperCoeffMatrix);
       this.bishopCounter--;
     } else if (this.bishopCounter >= 0 && !this.bishopDown) {
-      this.quadricsArray[44].transform(new Mat4().translate(-.125, 0, -.125));
-      this.quadricsArray[45].transform(new Mat4().translate(-.125, 0, -.125));
-      Material.quadrics.at(88).set(this.quadricsArray[44].surfaceCoeffMatrix);
-      Material.quadrics.at(89).set(this.quadricsArray[44].clipperCoeffMatrix);
-      Material.quadrics.at(90).set(this.quadricsArray[45].surfaceCoeffMatrix);
-      Material.quadrics.at(91).set(this.quadricsArray[45].clipperCoeffMatrix);
+      this.quadricsArray[22].transform(new Mat4().translate(-.125, 0, -.125));
+      this.quadricsArray[23].transform(new Mat4().translate(-.125, 0, -.125));
+      Material.quadrics.at(44).set(this.quadricsArray[22].surfaceCoeffMatrix);
+      Material.quadrics.at(45).set(this.quadricsArray[22].clipperCoeffMatrix);
+      Material.quadrics.at(46).set(this.quadricsArray[23].surfaceCoeffMatrix);
+      Material.quadrics.at(47).set(this.quadricsArray[23].clipperCoeffMatrix);
       this.bishopCounter++;
     }
   }
