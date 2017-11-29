@@ -21,18 +21,18 @@ ClippedQuadric.prototype.setUnitCylinder = function(){
   	1, 0, 0, 0,
 		0, 0, 0, 0,
 		0, 0, 1, 0,
-		0, 0, 0, -.9);
+		0, 0, 0, -.7);
   this.clipperCoeffMatrix.set(	
   	0, 0, 0, 0,
 		0, 1, 0, 0,
 		0, 0, 0, 0,
-		0, 0, 0, -.9);
+		0, 0, 0, -.7);
 };
 
 ClippedQuadric.prototype.setUnitCone = function(){
   this.surfaceCoeffMatrix.set(	
   	1, 0, 0, 0,
-    0, -.8, 0, 0,
+    0, -.6, 0, 0,
     0, 0, 1, 0,
     0, 0, 0, 0);
   this.clipperCoeffMatrix.set(	

@@ -378,6 +378,7 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `
 		} else { // normal pieces
 			vec3 bumpy = normalize(quadricNormal + noiseGrad(quadricNormal));
 			gl_FragColor = shadeShiny(intersectionPoint.xyz, quadricNormal);
+			// + vec4(.5, .5, .5, 0)
 		}	
 	
 	}

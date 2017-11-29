@@ -2,7 +2,8 @@
 let Scene = function(gl) {
   this.pawnCounter = 33;
   this.pawnDown = true;
-  this.pawnGo = true;
+  // this.pawnGo = true;
+  this.pawnGo = false;
 
   this.bishopCounter = 65;
   this.bishopDown = true;
@@ -21,24 +22,61 @@ let Scene = function(gl) {
   this.quadricsArray = [];
   this.maxQuadrics = 104;
 
+  // WHITE PIECES
+  // 0 - 31
+  this.makeWhitePawns();
+
+  // 32 - 35
+  this.makeWhiteKing();
+
+  // 36 - 39
+  this.makeWhiteQueen();
+
+  // 40 - 47
+  this.makeWhiteBishops();
+
+  // 48 - 51
+  this.makeWhiteRooks();
+  
+
+  // BLACK PIECES
+  // 52 - 83
+  this.makeBlackPawns();
+
+  // 84 - 87
+  this.makeBlackKing();
+
+  // 88 - 91
+  this.makeBlackQueen();
+
+  // 92 - 99
+  this.makeBlackBishops();
+
+  // 100 - 103
+  this.makeBlackRooks();
+  
+
+
+
   // Pawns 0-63
-  this.makePawns();
+  // this.makeBlackPawns();
 
   // Kings 64 - 71
-  this.makeKings();
+  // this.makeBlackKing();
 
   // Queens 72 - 79
-  this.makeQueens();
+  // this.makeBlackQueen();
 
   // Bishops 80 - 95
-  this.makeBishops();
+  //black
+  // this.makeBlackBishops();
 
   // Rooks 96 - 104
   //   mcc: 4 - 27
-  this.makeRook(-7, 7, 3);
-  this.makeRook(-7, -7, 12);
-  this.makeRook(7, -7, 21);
-  this.makeRook(7, 7, 30);
+  //black
+  // this.makeRook(-7, 7, 3);
+  // this.makeRook(7, 7, 30);
+  
 
   // this.quadricsArray[6].transform(new Mat4().translate(0, 0, 4));
   // this.quadricsArray[7].transform(new Mat4().translate(0, 0, 4));
@@ -140,7 +178,7 @@ Scene.prototype.boardSetup = function() {
   Material.mcc.at(2).set(this.boardClipper2);
 };
 
-Scene.prototype.makePawns = function() {
+Scene.prototype.makeWhitePawns = function() {
   for (var i = -7; i < 8; i += 2) {
     let pawn = new ClippedQuadric(new Mat4(), new Mat4());
     pawn.setUnitSphere();
@@ -153,7 +191,9 @@ Scene.prototype.makePawns = function() {
     this.quadricsArray.push(pawn);
     this.quadricsArray.push(pawnTop);
   }
+};
 
+Scene.prototype.makeBlackPawns = function() {
   for (var i = -7; i < 8; i += 2) {
     let pawn = new ClippedQuadric(new Mat4(), new Mat4());
     pawn.setUnitSphere();
@@ -166,9 +206,31 @@ Scene.prototype.makePawns = function() {
     this.quadricsArray.push(pawn);
     this.quadricsArray.push(pawnTop);
   }
+}
+
+Scene.prototype.makeWhiteKing = function() {
+  let king = new ClippedQuadric(new Mat4(), new Mat4());
+  king.setUnitCylinder();
+  king.transform(new Mat4().translate(1, 2, -7));
+
+  let kingTop = new ClippedQuadric(new Mat4(), new Mat4());
+  kingTop.surfaceCoeffMatrix.set(  
+    1, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 1, 0,
+    0, .9, 0, 0);
+  kingTop.clipperCoeffMatrix.set(  
+    0, 0, 0, 0,
+    0, 1, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, -1);
+  kingTop.transform(new Mat4().translate(1, 3.9, -7));
+  
+  this.quadricsArray.push(king);
+  this.quadricsArray.push(kingTop);
 };
 
-Scene.prototype.makeKings = function() {
+Scene.prototype.makeBlackKing = function() {
   let king = new ClippedQuadric(new Mat4(), new Mat4());
   king.setUnitCylinder();
   king.transform(new Mat4().translate(1, 2, 7));
@@ -185,34 +247,11 @@ Scene.prototype.makeKings = function() {
     0, 0, 0, 0,
     0, 0, 0, -1);
   kingTop.transform(new Mat4().translate(1, 3.9, 7));
-
-
-
-  let king2 = new ClippedQuadric(new Mat4(), new Mat4());
-  king2.setUnitCylinder();
-  king2.transform(new Mat4().translate(1, 2, -7));
-
-  let king2Top = new ClippedQuadric(new Mat4(), new Mat4());
-  king2Top.surfaceCoeffMatrix.set(  
-    1, 0, 0, 0,
-    0, 0, 0, 0,
-    0, 0, 1, 0,
-    0, .9, 0, 0);
-  king2Top.clipperCoeffMatrix.set(  
-    0, 0, 0, 0,
-    0, 1, 0, 0,
-    0, 0, 0, 0,
-    0, 0, 0, -1);
-  king2Top.transform(new Mat4().translate(1, 3.9, -7));
-
-    
   this.quadricsArray.push(king);
   this.quadricsArray.push(kingTop);
-  this.quadricsArray.push(king2);
-  this.quadricsArray.push(king2Top);
-};
+}
 
-Scene.prototype.makeQueens = function() {
+Scene.prototype.makeBlackQueen = function() {
   let queen = new ClippedQuadric(new Mat4(), new Mat4());
   queen.surfaceCoeffMatrix.set(  
     1, 0, 0, 0,
@@ -239,40 +278,41 @@ Scene.prototype.makeQueens = function() {
     0, 0, 0, -1);
   queenTop.transform(new Mat4().translate(-1, 4, 7));
 
-  let queen2 = new ClippedQuadric(new Mat4(), new Mat4());
-  queen2.surfaceCoeffMatrix.set(  
+  this.quadricsArray.push(queen);
+  this.quadricsArray.push(queenTop);
+};
+
+Scene.prototype.makeWhiteQueen = function() {
+  let queen = new ClippedQuadric(new Mat4(), new Mat4());
+  queen.surfaceCoeffMatrix.set(  
     1, 0, 0, 0,
     0, -.2, 0, 0,
     0, 0, 1, 0,
     0, 0, 0, -.2);
-  queen2.clipperCoeffMatrix.set(  
+  queen.clipperCoeffMatrix.set(  
     0, 0, 0, 0,
     0, 1, 0, 0,
     0, 0, 0, 0,
     0, 0, 0, -1);
-  queen2.transform(new Mat4().translate(-1, 2, -7));
+  queen.transform(new Mat4().translate(-1, 2, -7));
 
-  let queen2Top = new ClippedQuadric(new Mat4(), new Mat4());
-  queen2Top.surfaceCoeffMatrix.set(  
+  let queenTop = new ClippedQuadric(new Mat4(), new Mat4());
+  queenTop.surfaceCoeffMatrix.set(  
     1, 0, 0, 0,
     0, 0, 0, 0,
     0, 0, 1, 0,
     0, .4, 0, 0);
-  queen2Top.clipperCoeffMatrix.set(  
+  queenTop.clipperCoeffMatrix.set(  
     0, 0, 0, 0,
     0, 1, 0, 0,
     0, 0, 0, 0,
     0, 0, 0, -1);
-  queen2Top.transform(new Mat4().translate(-1, 4, -7));
-
+  queenTop.transform(new Mat4().translate(-1, 4, -7));
   this.quadricsArray.push(queen);
   this.quadricsArray.push(queenTop);
-  this.quadricsArray.push(queen2);
-  this.quadricsArray.push(queen2Top);
-};
+}
 
-Scene.prototype.makeBishops = function() {
-  // bishops 1st side
+Scene.prototype.makeBishop = function(x, z) {
   let bishop = new ClippedQuadric(new Mat4(), new Mat4());
   bishop.clipperCoeffMatrix.set(  
     2, 0, 0, 0,
@@ -284,7 +324,7 @@ Scene.prototype.makeBishops = function() {
     0, -1, 0, 0,
     0, 0, 0, 0,
     0, 0, 0, .08);
-  bishop.transform(new Mat4().translate(-3, 2.4, 7));
+  bishop.transform(new Mat4().translate(x, 2.4, z));
   bishop.transformClipper(new Mat4().translate(0, .4, 0));
 
   let bishopOutside = new ClippedQuadric(new Mat4(), new Mat4());
@@ -298,104 +338,22 @@ Scene.prototype.makeBishops = function() {
     0, -1, 0, 0,
     0, 0, 0, 0,
     0, 0, 0, .08);
-  bishopOutside.transform(new Mat4().translate(-3, 2, 7));
+  bishopOutside.transform(new Mat4().translate(x, 2, z));
   bishopOutside.transformClipper(new Mat4().translate(0, .4, 0));
-
-  let bishop2 = new ClippedQuadric(new Mat4(), new Mat4());
-  bishop2.clipperCoeffMatrix.set(  
-    2, 0, 0, 0,
-    0, .5, 0, 0,
-    0, 0, 2, 0,
-    0, 0, 0, -.5);
-  bishop2.surfaceCoeffMatrix.set(  
-    -1, 0, 0, 0,
-    0, -1, 0, 0,
-    0, 0, 0, 0,
-    0, 0, 0, .08);
-  bishop2.transform(new Mat4().translate(3, 2.4, 7));
-  bishop2.transformClipper(new Mat4().translate(0, .4, 0));
-
-  let bishop2Outside = new ClippedQuadric(new Mat4(), new Mat4());
-  bishop2Outside.surfaceCoeffMatrix.set(  
-    2, 0, 0, 0,
-    0, .5, 0, 0,
-    0, 0, 2, 0,
-    0, 0, 0, -.5);
-  bishop2Outside.clipperCoeffMatrix.set(  
-    -1, 0, 0, 0,
-    0, -1, 0, 0,
-    0, 0, 0, 0,
-    0, 0, 0, .08);
-  bishop2Outside.transform(new Mat4().translate(3, 2, 7));
-  bishop2Outside.transformClipper(new Mat4().translate(0, .4, 0));
-
-  // bishops 2nd side
-  let bishop3 = new ClippedQuadric(new Mat4(), new Mat4());
-  bishop3.clipperCoeffMatrix.set(  
-    2, 0, 0, 0,
-    0, .5, 0, 0,
-    0, 0, 2, 0,
-    0, 0, 0, -.5);
-  bishop3.surfaceCoeffMatrix.set(  
-    -1, 0, 0, 0,
-    0, -1, 0, 0,
-    0, 0, 0, 0,
-    0, 0, 0, .08);
-  bishop3.transform(new Mat4().translate(-3, 2.4, -7));
-  bishop3.transformClipper(new Mat4().translate(0, .4, 0));
-
-  let bishop3Outside = new ClippedQuadric(new Mat4(), new Mat4());
-  bishop3Outside.surfaceCoeffMatrix.set(  
-    2, 0, 0, 0,
-    0, .5, 0, 0,
-    0, 0, 2, 0,
-    0, 0, 0, -.5);
-  bishop3Outside.clipperCoeffMatrix.set(  
-    -1, 0, 0, 0,
-    0, -1, 0, 0,
-    0, 0, 0, 0,
-    0, 0, 0, .08);
-  bishop3Outside.transform(new Mat4().translate(-3, 2, -7));
-  bishop3Outside.transformClipper(new Mat4().translate(0, .4, 0));
-
-  let bishop4 = new ClippedQuadric(new Mat4(), new Mat4());
-  bishop4.clipperCoeffMatrix.set(  
-    2, 0, 0, 0,
-    0, .5, 0, 0,
-    0, 0, 2, 0,
-    0, 0, 0, -.5);
-  bishop4.surfaceCoeffMatrix.set(  
-    -1, 0, 0, 0,
-    0, -1, 0, 0,
-    0, 0, 0, 0,
-    0, 0, 0, .08);
-  bishop4.transform(new Mat4().translate(3, 2.4, -7));
-  bishop4.transformClipper(new Mat4().translate(0, .4, 0));
-
-  let bishop4Outside = new ClippedQuadric(new Mat4(), new Mat4());
-  bishop4Outside.surfaceCoeffMatrix.set(  
-    2, 0, 0, 0,
-    0, .5, 0, 0,
-    0, 0, 2, 0,
-    0, 0, 0, -.5);
-  bishop4Outside.clipperCoeffMatrix.set(  
-    -1, 0, 0, 0,
-    0, -1, 0, 0,
-    0, 0, 0, 0,
-    0, 0, 0, .08);
-  bishop4Outside.transform(new Mat4().translate(3, 2, -7));
-  bishop4Outside.transformClipper(new Mat4().translate(0, .4, 0));
 
   this.quadricsArray.push(bishop);
   this.quadricsArray.push(bishopOutside);
-  this.quadricsArray.push(bishop2);
-  this.quadricsArray.push(bishop2Outside);
-  this.quadricsArray.push(bishop3);
-  this.quadricsArray.push(bishop3Outside);
-  console.log(this.quadricsArray.length);
-  this.quadricsArray.push(bishop4);
-  this.quadricsArray.push(bishop4Outside);
-};
+}
+
+Scene.prototype.makeWhiteBishops = function() {
+  this.makeBishop(3, -7);
+  this.makeBishop(-3, -7);
+}
+
+Scene.prototype.makeBlackBishops = function() {
+  this.makeBishop(3, 7);
+  this.makeBishop(-3, 7);
+}
 
 Scene.prototype.makeRook = function(x, z, startingMccIndex) {
   let rook = new ClippedQuadric(new Mat4(), new Mat4());
@@ -478,6 +436,16 @@ Scene.prototype.makeRook = function(x, z, startingMccIndex) {
   Material.mcc.at(startingMccIndex + 6).set(rookTopSide2.surfaceCoeffMatrix);
   Material.mcc.at(startingMccIndex + 7).set(rookTopSide2.clipperCoeffMatrix);
   Material.mcc.at(startingMccIndex + 8).set(rookTopSide2.clipperCoeffMatrix2);
+};
+
+Scene.prototype.makeWhiteRooks = function() {
+  this.makeRook(-7, -7, 12);
+  this.makeRook(7, -7, 21);
+};
+
+Scene.prototype.makeBlackRooks = function() {
+  this.makeRook(-7, 7, 3);
+  this.makeRook(7, 7, 30);  
 };
 
 Scene.prototype.update = function(gl, keysPressed) {
