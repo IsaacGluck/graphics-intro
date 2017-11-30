@@ -71,6 +71,25 @@ let Scene = function(gl) {
   for (var i = 0; i < 52; i++) {
     Material.brdfs.at(i).set(1, 1, 1, 0);
   }
+
+
+  let one = new Vec3(1.0, 1.0, 1.0);
+  let goldU = new Vec3(0.21, 0.485, 1.29);
+  let goldK = new Vec3(3.13, 2.23, 1.76);
+  let goldR0Top = goldU.minus(one).times(goldU.minus(one)).plus(goldK.times(goldK));
+  let goldR0Bottom = goldU.plus(one).times(goldU.plus(one)).plus(goldK.times(goldK));
+  Material.goldR0.set(goldR0Top.over(goldR0Bottom));
+
+  let silverU = new Vec3(0.15, 0.14, 0.13);
+  let silverK = new Vec3(3.7, 3.11, 2.47);
+  let silverR0Top = silverU.minus(one).times(silverU.minus(one)).plus(silverK.times(silverK));
+  let silverR0Bottom = silverU.plus(one).times(silverU.plus(one)).plus(silverK.times(silverK));
+  Material.silverR0.set(silverR0Top.over(silverR0Bottom));
+
+  // (u-1)^2 + k^2
+  // ---------------
+  // (u+1)^2  + k^2
+
 };
 
 Scene.prototype.setup = function(gl) {
@@ -155,14 +174,25 @@ Scene.prototype.boardSetup = function() {
 Scene.prototype.makeWhitePawns = function() {
   for (var i = -7; i < 8; i += 2) {
     let pawn = new ClippedQuadric(new Mat4(), new Mat4());
-    pawn.setUnitSphere();
-    pawn.transform(new Mat4().translate(i, 1.9, -5));
-
-    let pawnTop = new ClippedQuadric(new Mat4(), new Mat4());
-    pawnTop.setUnitCone();
-    pawnTop.transform(new Mat4().translate(i, 3.4, -5));
+    pawn.surfaceCoeffMatrix.set(  
+      1, 0, 0, 0,
+      0, 1, 0, 0,
+      0, 0, 1, 0,
+      0, 0, 0, -.2);
+    pawn.clipperCoeffMatrix.set(  
+      0, 0, 0, 0,
+      0, 1, 0, 0,
+      0, 0, 0, 0,
+      0, 0, 0, -.2);
+    pawn.transform(new Mat4().translate(i, 2.2, -5));
 
     this.quadricsArray.push(pawn);
+  }
+
+  for (var i = -7; i < 8; i += 2) {
+    let pawnTop = new ClippedQuadric(new Mat4(), new Mat4());
+    pawnTop.setUnitCone();
+    pawnTop.transform(new Mat4().translate(i, 2, -5));
     this.quadricsArray.push(pawnTop);
   }
 };
@@ -170,21 +200,41 @@ Scene.prototype.makeWhitePawns = function() {
 Scene.prototype.makeBlackPawns = function() {
   for (var i = -7; i < 8; i += 2) {
     let pawn = new ClippedQuadric(new Mat4(), new Mat4());
-    pawn.setUnitSphere();
-    pawn.transform(new Mat4().translate(i, 1.9, 5));
-
-    let pawnTop = new ClippedQuadric(new Mat4(), new Mat4());
-    pawnTop.setUnitCone();
-    pawnTop.transform(new Mat4().translate(i, 3.4, 5));
+    pawn.surfaceCoeffMatrix.set(  
+      1, 0, 0, 0,
+      0, 1, 0, 0,
+      0, 0, 1, 0,
+      0, 0, 0, -.2);
+    pawn.clipperCoeffMatrix.set(  
+      0, 0, 0, 0,
+      0, 1, 0, 0,
+      0, 0, 0, 0,
+      0, 0, 0, -.2);
+    pawn.transform(new Mat4().translate(i, 2.2, 5));
 
     this.quadricsArray.push(pawn);
+  }
+
+  for (var i = -7; i < 8; i += 2) {
+    let pawnTop = new ClippedQuadric(new Mat4(), new Mat4());
+    pawnTop.setUnitCone();
+    pawnTop.transform(new Mat4().translate(i, 2, 5));
     this.quadricsArray.push(pawnTop);
   }
 }
 
 Scene.prototype.makeWhiteKing = function() {
   let king = new ClippedQuadric(new Mat4(), new Mat4());
-  king.setUnitCylinder();
+  king.surfaceCoeffMatrix.set(  
+    1, 0, 0, 0,
+    0, -.5, 0, 0,
+    0, 0, 1, 0,
+    0, 0, 0, -.3);
+  king.clipperCoeffMatrix.set(  
+    0, 0, 0, 0,
+    0, 1, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, -1);
   king.transform(new Mat4().translate(1, 2, -7));
 
   let kingTop = new ClippedQuadric(new Mat4(), new Mat4());
@@ -198,7 +248,7 @@ Scene.prototype.makeWhiteKing = function() {
     0, 1, 0, 0,
     0, 0, 0, 0,
     0, 0, 0, -1);
-  kingTop.transform(new Mat4().translate(1, 3.9, -7));
+  kingTop.transform(new Mat4().translate(1, 4, -7));
   
   this.quadricsArray.push(king);
   this.quadricsArray.push(kingTop);
@@ -206,7 +256,16 @@ Scene.prototype.makeWhiteKing = function() {
 
 Scene.prototype.makeBlackKing = function() {
   let king = new ClippedQuadric(new Mat4(), new Mat4());
-  king.setUnitCylinder();
+  king.surfaceCoeffMatrix.set(  
+    1, 0, 0, 0,
+    0, -.5, 0, 0,
+    0, 0, 1, 0,
+    0, 0, 0, -.3);
+  king.clipperCoeffMatrix.set(  
+    0, 0, 0, 0,
+    0, 1, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, -1);
   king.transform(new Mat4().translate(1, 2, 7));
 
   let kingTop = new ClippedQuadric(new Mat4(), new Mat4());
@@ -220,7 +279,7 @@ Scene.prototype.makeBlackKing = function() {
     0, 1, 0, 0,
     0, 0, 0, 0,
     0, 0, 0, -1);
-  kingTop.transform(new Mat4().translate(1, 3.9, 7));
+  kingTop.transform(new Mat4().translate(1, 4, 7));
   this.quadricsArray.push(king);
   this.quadricsArray.push(kingTop);
 }
@@ -262,26 +321,26 @@ Scene.prototype.makeWhiteQueen = function() {
     1, 0, 0, 0,
     0, -.2, 0, 0,
     0, 0, 1, 0,
-    0, 0, 0, -.2);
+    0, 0, 0, -.1);
   queen.clipperCoeffMatrix.set(  
     0, 0, 0, 0,
-    0, 1, 0, 0,
+    0, 1, 0, 1,
     0, 0, 0, 0,
     0, 0, 0, -1);
-  queen.transform(new Mat4().translate(-1, 2, -7));
+  queen.transform(new Mat4().translate(-1, 2.62, -7));
 
   let queenTop = new ClippedQuadric(new Mat4(), new Mat4());
   queenTop.surfaceCoeffMatrix.set(  
     1, 0, 0, 0,
-    0, 0, 0, 0,
+    0, 1, 0, 0,
     0, 0, 1, 0,
-    0, .4, 0, 0);
+    0, 0, 0, -.4);
   queenTop.clipperCoeffMatrix.set(  
     0, 0, 0, 0,
     0, 1, 0, 0,
     0, 0, 0, 0,
-    0, 0, 0, -1);
-  queenTop.transform(new Mat4().translate(-1, 4, -7));
+    0, 0, 0, -.4);
+  queenTop.transform(new Mat4().translate(-1, 3.6, -7));
   this.quadricsArray.push(queen);
   this.quadricsArray.push(queenTop);
 }
@@ -443,20 +502,20 @@ Scene.prototype.update = function(gl, keysPressed) {
       this.pawnDown = !this.pawnDown;
     } else if (this.pawnCounter > 0 && this.pawnDown) {
       // console.log(this.quadricsArray[0]);
-      this.quadricsArray[6].transform(new Mat4().translate(0, 0, .125));
-      this.quadricsArray[7].transform(new Mat4().translate(0, 0, .125));
-      Material.quadrics.at(12).set(this.quadricsArray[6].surfaceCoeffMatrix);
-      Material.quadrics.at(13).set(this.quadricsArray[6].clipperCoeffMatrix);
-      Material.quadrics.at(14).set(this.quadricsArray[7].surfaceCoeffMatrix);
-      Material.quadrics.at(15).set(this.quadricsArray[7].clipperCoeffMatrix);
+      this.quadricsArray[3].transform(new Mat4().translate(0, 0, .12));
+      this.quadricsArray[11].transform(new Mat4().translate(0, 0, .12));
+      Material.quadrics.at(6).set(this.quadricsArray[3].surfaceCoeffMatrix);
+      Material.quadrics.at(7).set(this.quadricsArray[3].clipperCoeffMatrix);
+      Material.quadrics.at(22).set(this.quadricsArray[11].surfaceCoeffMatrix);
+      Material.quadrics.at(23).set(this.quadricsArray[11].clipperCoeffMatrix);
       this.pawnCounter--;
     } else if (this.pawnCounter >= 0 && !this.pawnDown) {
-      this.quadricsArray[6].transform(new Mat4().translate(0, 0, -.125));
-      this.quadricsArray[7].transform(new Mat4().translate(0, 0, -.125));
-      Material.quadrics.at(12).set(this.quadricsArray[6].surfaceCoeffMatrix);
-      Material.quadrics.at(13).set(this.quadricsArray[6].clipperCoeffMatrix);
-      Material.quadrics.at(14).set(this.quadricsArray[7].surfaceCoeffMatrix);
-      Material.quadrics.at(15).set(this.quadricsArray[7].clipperCoeffMatrix);
+      this.quadricsArray[3].transform(new Mat4().translate(0, 0, -.12));
+      this.quadricsArray[11].transform(new Mat4().translate(0, 0, -.12));
+      Material.quadrics.at(6).set(this.quadricsArray[3].surfaceCoeffMatrix);
+      Material.quadrics.at(7).set(this.quadricsArray[3].clipperCoeffMatrix);
+      Material.quadrics.at(22).set(this.quadricsArray[11].surfaceCoeffMatrix);
+      Material.quadrics.at(23).set(this.quadricsArray[11].clipperCoeffMatrix);
       this.pawnCounter++;
     }
   }

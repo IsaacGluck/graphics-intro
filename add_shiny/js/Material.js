@@ -89,3 +89,9 @@ Object.defineProperty(Material,
 Object.defineProperty(Material,
  "mcc", {value: new Mat4Array(39)} );
 
+Object.defineProperty(Material,
+ "goldR0", {value: new Vec3()} );
+
+Object.defineProperty(Material,
+ "silverR0", {value: new Vec3()} );
+
