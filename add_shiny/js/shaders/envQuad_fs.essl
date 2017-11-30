@@ -157,6 +157,66 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `
 		if (dot(h2 * C, h2) > 0.0) {
 			t2 = -1.0;
 		}
+
+		// if(fract(h1.x) < 0.5) {
+		// 	t1 = -1.0;
+		// }
+		// if(fract(h2.x) < 0.5) {
+		// 	t2 = -1.0;
+		// }
+
+		///////////
+
+		if (t1 < 0.0) {
+			return t2;
+		} else if (t2 < 0.0) {
+			return t1;
+		} else {
+			if (t1 < t2) {
+				return t1;
+			} else {
+				return t2;
+			}
+		}
+	}
+
+	float intersectTwiceClippedQuadricRook(mat4 A, mat4 B, mat4 C, vec4 e, vec4 d) {
+		float a = dot(d * A, d);
+		float b = dot(d * A, e) + dot(e * A, d);
+		float c = dot(e * A, e);
+
+		float discriminent = pow(b, 2.0) - 4.0*a*c;
+		if (discriminent < 0.0) {
+			return -1.0; // no intersection
+		}
+
+		float t1 = ((-1.0 * b) + sqrt(discriminent)) / (2.0*a);
+		float t2 = ((-1.0 * b) - sqrt(discriminent)) / (2.0*a);
+
+		vec4 h1 = e + (d * t1);
+		vec4 h2 = e + (d * t2);
+
+		// In the clipped shape?
+		if (dot(h1 * B, h1) > 0.0) {
+			t1 = -1.0;
+		}
+		if (dot(h2 * B, h2) > 0.0) {
+			t2 = -1.0;
+		}
+		if (dot(h1 * C, h1) > 0.0) {
+			t1 = -1.0;
+		}
+		if (dot(h2 * C, h2) > 0.0) {
+			t2 = -1.0;
+		}
+
+		if(fract(h1.x) < 0.1 || fract(h1.z) < 0.1) {
+			t1 = -1.0;
+		}
+		if(fract(h2.x) < 0.1 || fract(h2.z) < 0.1) {
+			t2 = -1.0;
+		}
+
 		///////////
 
 		if (t1 < 0.0) {
@@ -197,8 +257,29 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `
 		}
 
 		// doubly clipped quadric
-		for(int i = 0; i < 39; i+=3) {
+		for(int i = 0; i < 3; i+=3) {
 			float tempT = intersectTwiceClippedQuadric(mcc[i], mcc[i + 1], mcc[i+2], e, d);
+
+			 if (bestT < 0.0) {
+				bestT = tempT;
+				bestBrdf = brdfs[i/2];
+				bestA = mcc[i];
+				isWhite = false;
+			} else if (tempT > 0.0 && tempT < bestT) {
+				bestT = tempT;
+				bestBrdf = brdfs[i/2];
+				bestA = mcc[i];
+				if (i > 10 && i < 28) {
+					isWhite = true;
+				} else {
+					isWhite = false;
+				}
+			}
+		}
+
+		// doubly clipped quadric
+		for(int i = 3; i < 39; i+=3) {
+			float tempT = intersectTwiceClippedQuadricRook(mcc[i], mcc[i + 1], mcc[i+2], e, d);
 
 			 if (bestT < 0.0) {
 				bestT = tempT;
@@ -223,19 +304,13 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `
 	vec4 shadeShiny(vec3 worldPos, vec3 worldNormal) {
 		vec3 baseColor = vec3(1.0, 1.0, 1.0);
 		vec3 apparentColor = vec3(0, 0, 0);
-		// bool isWhite = false;
 
 		for (int i = 0; i < 1; i++) {
 			vec3 lightDir = lightPos[i].xyz - (worldPos * lightPos[i].w);
-
 			vec3 h = normalize(lightDir) + normalize(cameraPos - worldPos);
-
 			float cos = dot( normalize(worldNormal), normalize(h));
-
 			float shininess = pow( max(cos, 0.0), 6.0);
-
 			vec3 middle = lightPowerDensity[i] / dot(lightDir,lightDir);
-
 			float spotLight = max( dot( normalize(lightDir), normalize(spotDir[i])), 0.0);
 
 			// TEST FOR INTERSECTION
@@ -255,10 +330,6 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `
 
 			apparentColor = apparentColor + shininess * baseColor * middle * pow(spotLight,3.0);
 		}
-
-		// if (isWhite == true) {
-		// 	return vec4(apparentColor, 1) + vec4(0.4, 0.4, 0.4, 0);
-		// }
 
 		return vec4(apparentColor, 1);
 	}
@@ -341,20 +412,6 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `
 		return vec4(apparentColor, 1);
 	}
 
-  // 0 = normal
-  // 1 = wood
-  // 2 = marble
-  // vec4 shade(int material, vec3 worldPos, vec3 worldNormal) {
-  	
-  // 	if (material == 1) {
-  // 		return getWoodColor(intersectionPoint.xyz , 16.0, 500.0, 8.0, 10.0);
-  // 	} else if (material == 2) {
-  // 		return getMarbleColor(intersectionPoint.xyz , 32.0, 50.0, 32.0, 1.0);
-  // 	} else {
-  // 		return shadeShiny(worldPos, worldNormal);
-  // 	}
-  // }
-
 	void main(void) {
 		vec4 e = vec4(cameraPos, 1.0);
 		vec4 d = vec4(rayDir, 0.0);
@@ -384,7 +441,7 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `
 			return;
 		}
 
-		vec3 outRadiance = vec3(0, 0, 0);
+		// vec3 outRadiance = vec3(0, 0, 0);
 
 
 
@@ -393,24 +450,21 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `
 			float zCor = floor(intersectionPoint.z / 2.0);
 			if (mod((xCor + zCor), 2.0) < 0.5) {
 				gl_FragColor = shadeShinyWood(intersectionPoint.xyz, quadricNormal);
-				// gl_FragColor = getWoodColor(intersectionPoint.xyz , 16.0, 500.0, 8.0, 10.0);
 			} else {
-				// gl_FragColor = getMarbleColor(intersectionPoint.xyz , 32.0, 50.0, 32.0, 1.0);
 				gl_FragColor = shadeShinyMarble(intersectionPoint.xyz, quadricNormal);
 			}
 		} else { // normal pieces
-			vec3 bumpy = normalize(quadricNormal + noiseGrad(quadricNormal)); // QUESTION
+			vec3 bumpy = normalize(quadricNormal + (noiseGrad(intersectionPoint.xyz * 4.0) * 0.007)); // QUESTION
 
 			if (isWhite) {
-				gl_FragColor = shadeShiny(intersectionPoint.xyz, quadricNormal) + vec4(0.4, 0.4, 0.4, 0);
+				gl_FragColor = shadeShiny(intersectionPoint.xyz, quadricNormal) + vec4(0.5, 0.5, 0.5, 0);
+				// gl_FragColor = shadeShiny(intersectionPoint.xyz, quadricNormal);
 			} else {
-				gl_FragColor = shadeShiny(intersectionPoint.xyz, quadricNormal);
-			}
-
-			
-			// + vec4(.5, .5, .5, 0)
-		}	
-	
+				// gl_FragColor = shadeShiny(intersectionPoint.xyz, quadricNormal);
+				gl_FragColor = shadeShiny(intersectionPoint.xyz, bumpy);
+			}		
+				
+		}
 	}
 `;
 

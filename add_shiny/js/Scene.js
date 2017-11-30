@@ -114,7 +114,7 @@ Scene.prototype.lightInfo = function() {
   this.directionalLight = new Vec4(1, 1, -1, 0);
   this.pointLight = new Vec4(-3, 7, 7, 1);
 
-  this.directionalLightPowerDensity = new Vec3(.9, .9, .7);
+  this.directionalLightPowerDensity = new Vec3(4, 4, 3);
   this.pointLightPowerDensity = new Vec3(50, 50, 20);
 
   this.lightSources = [this.directionalLight, this.pointLight];
