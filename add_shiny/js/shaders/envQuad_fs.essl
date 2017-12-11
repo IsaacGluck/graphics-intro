@@ -305,7 +305,8 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `
 				isWhite = true;
 				isSilver = false;
 				isGold = false;
-				if (i < 16) {
+				// if (i < 16) {
+				if (i < 32) {
 					isSilver = true;
 				}
 				if (i > 31) {
@@ -745,7 +746,7 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `
 			}
 		} else { // normal pieces
 			// normal mapping
-			vec3 bumpy = normalize(quadricNormal + (noiseGrad(intersectionPoint.xyz * 4.0) * 0.007)); // QUESTION
+			vec3 bumpy = normalize(quadricNormal + (noiseGrad(intersectionPoint.xyz * 5.0) * 0.007)); // QUESTION
 
 			if (!isSilver && !isGold && isWhite) {
 				gl_FragColor = shadeShiny(intersectionPoint.xyz, quadricNormal) + vec4(0.5, 0.5, 0.5, 0);
