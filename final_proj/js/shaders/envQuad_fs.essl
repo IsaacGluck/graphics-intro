@@ -301,33 +301,18 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `
 	// how to test => refractive index = 1 
 
 	vec4 shadeRefraction(vec3 pos, vec3 normal) {
-		// vec4 reflection_color = shadeReflection(pos, normal);
-		// vec4 shiny_color = shadeShiny(pos, normal);
-
-		vec3 refractNormal = normal; // ray going into object
+		vec3 refractNormal = normal; // normal at intersection of rayDir
 		float nc = 1.0;
-		float nt = 1.1;
+		float nt = 1.3;
 		float nnt = nc;
 		nnt = nt/nc;
-		// if (dot(refractNormal, rayDir) > 0.0) { // ray going out of object
-		// 	refractNormal = -1.0 * refractNormal; // must invert for refraction
-		// 	nnt = nc/nt;
-		// } else {
-		// 	nnt = nt/nc;
-		// }
 
+		// refraction direction of original ray
+		vec3 refracRayDirInside = refract(normalize(rayDir), normalize(refractNormal), nnt);
 
-		vec3 refracRayDir = refract(normalize(rayDir), normalize(refractNormal), nnt);
-
-		// Total internal reflection on outside?
-		// if (refracRayDir == vec3(0.0)) {
-		// 	return shadeReflection(pos, refractNormal);
-		// 	// break;
-		// }
-
-		// Find the other side
-		vec4 e = vec4(pos + (0.1 * refracRayDir), 1.0);
-		vec4 d = vec4(refracRayDir, 0.0);
+		// Find other side
+		vec4 e = vec4(pos + (0.1 * refracRayDirInside), 1.0);
+		vec4 d = vec4(refracRayDirInside, 0.0);
 		float bestT = 1000000000.0;
 		vec4 bestBrdf;
 		mat4 bestA;
@@ -336,83 +321,78 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `
 		// Base out color
 		vec4 outColor = vec4(0.0, 0.0, 0.0, 0.0);
 
-
-		// if (!testPoint || bestT == 1000000000.0) { // no intersection, shade as normal
-		// 	outColor = shadeEnvMap(refracRayDir);
-		// }
-
 		// Intersection: draw the color
 		vec4 intersectionPoint = e + (d * bestT);
 		vec3 quadricNormal = normalize((bestA*intersectionPoint + intersectionPoint*bestA).xyz);
 
-		// if (bestBrdf == vec4(0, 0, 0, 0)) { // board
-		// 	outColor = shadeBoard(intersectionPoint, quadricNormal);
-		// }
+		if (dot(quadricNormal, refracRayDirInside) > 0.0) { // ray going out of object
+			quadricNormal = -1.0 * quadricNormal;
+			nnt = nc/nt; // must invert for refraction
+		} else {
+			nnt = nt/nc;
+		}
 
-		// if (bestBrdf == vec4(1, 1, 1, 1)) {
-		// 	outColor = shadeReflection(intersectionPoint.xyz, quadricNormal);
-		// }
+		// initialize
+		vec3 refracRayDir = refracRayDirInside;
 
-		if (bestBrdf == vec4(2, 2, 2, 2)) {
-
-			// HIT OTHER SIDE
-			for (int i = 0; i < 4; i++) {
+		// HIT OTHER SIDE
+		for (int i = 0; i < 100; i++) {
+			
+			// Get the refracted ray direction
+			vec3 tempRefracRayDir = refract(normalize(refracRayDir), quadricNormal, nnt);
+			
+			// Total internal reflection
+			if (tempRefracRayDir == vec3(0.0)) {
 				
-				if (dot(refractNormal, refracRayDir) > 0.0) { // ray going out of object
-					refractNormal = -1.0 * refractNormal;
-					nnt = nc/nt; // must invert for refraction
-				} else {
-					nnt = nt/nc;
-				}
-
-				refracRayDir = refract(normalize(refracRayDir), refractNormal, nnt);
+				// Reflect the ray over the inner normal
+				vec3 reflRayDir = reflect(normalize(refracRayDir), quadricNormal);
 				
-				// Total internal reflection on inside
-				if (refracRayDir == vec3(0.0)) {
-					// outColor = vec4(1, 1, 1, 1);
+				// Get the intersection point of the reflected ray
+				e = vec4(intersectionPoint.xyz + (0.1 * reflRayDir), 1.0);
+				d = vec4(reflRayDir, 0.0);
+				bestT = 1000000000.0;
+				bestBrdf;
+				bestA;
+				testPoint = findBestHit(e, d, bestT, bestBrdf, bestA);
 
-					// reflRayDir = reflect(normalize(refracRayDir), refractNormal);
-					// e = vec4(intersectionPoint.xyz + (0.1 * reflRayDir), 1.0);
-					// d = vec4(reflRayDir, 0.0);
-					// bestT = 1000000000.0;
-					// bestBrdf;
-					// bestA;
-					// testPoint = findBestHit(e, d, bestT, bestBrdf, bestA);
+				intersectionPoint = e + (d * bestT); // Intersection point of reflected ray
+				quadricNormal = normalize((bestA*intersectionPoint + intersectionPoint*bestA).xyz); // Normal of reflected ray intersection point
+				quadricNormal = -1.0 * quadricNormal; // still inside so must negate again
 
-					return shadeReflection(intersectionPoint.xyz, refractNormal);
-					break;
-				}
+				refracRayDir = refract(normalize(reflRayDir), quadricNormal, nnt); // try to refract to get outside
+				continue;
+			} else {
+				// wasn't 0, so set it actually
+				// refracRayDir = refract(normalize(refracRayDir), quadricNormal, nnt);
+				refracRayDir = tempRefracRayDir;
+			}
 
-				vec4 e = vec4(intersectionPoint.xyz + (0.1 * refracRayDir), 1.0);
-				vec4 d = vec4(refracRayDir, 0.0);
-				float bestT = 1000000000.0;
-				vec4 bestBrdf;
-				mat4 bestA;
+			// Find the next point outside the sphere
+			vec4 e = vec4(intersectionPoint.xyz + (0.1 * refracRayDir), 1.0);
+			vec4 d = vec4(refracRayDir, 0.0);
+			float bestT = 1000000000.0;
+			vec4 bestBrdf;
+			mat4 bestA;
 
-				bool testPoint = findBestHit(e, d, bestT, bestBrdf, bestA);
+			testPoint = findBestHit(e, d, bestT, bestBrdf, bestA);
 
-				if (!testPoint || bestT == 1000000000.0) { // no intersection, shade as normal
-					outColor = shadeEnvMap(refracRayDir);
-					break;
-				}
+			if (!testPoint || bestT == 1000000000.0) { // no intersection, shade as normal
+				outColor = shadeEnvMap(refracRayDir);
+				break;
+			}
 
-				// intersection, draw the color
-				intersectionPoint = e + (d * bestT);
-				quadricNormal = normalize((bestA*intersectionPoint + intersectionPoint*bestA).xyz);
+			// intersection, draw the color
+			intersectionPoint = e + (d * bestT);
+			quadricNormal = normalize((bestA*intersectionPoint + intersectionPoint*bestA).xyz);
 
-				if (bestBrdf == vec4(0, 0, 0, 0)) { // board
-					outColor = shadeBoard(intersectionPoint, quadricNormal);
-					break;
-				}
+			if (bestBrdf == vec4(0, 0, 0, 0)) { // board
+				outColor = shadeBoard(intersectionPoint, quadricNormal);
+				break;
+			}
 
-				if (bestBrdf == vec4(1, 1, 1, 1)) { // metal
-					outColor = shadeReflection(intersectionPoint.xyz, quadricNormal);
-					break;
-				}
-
-				if (bestBrdf == vec4(2, 2, 2, 2)) {
-					continue;
-				}
+			if (bestBrdf == vec4(1, 1, 1, 1)) { // metal
+				outColor = shadeReflection(intersectionPoint.xyz, quadricNormal);
+				break;
 			}
 		}
 
@@ -483,3 +463,120 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `
 		// gl_FragColor = vec4(foggy.rgb, 1.0);
 	}
 `;
+
+
+
+
+// vec4 shadeRefraction(vec3 pos, vec3 normal) {
+// 		// vec4 reflection_color = shadeReflection(pos, normal);
+// 		// vec4 shiny_color = shadeShiny(pos, normal);
+
+// 		vec3 refractNormal = normal; // normal at intersection of rayDir
+// 		float nc = 1.0;
+// 		float nt = 1.3;
+// 		float nnt = nc;
+// 		nnt = nt/nc;
+
+// 		// refraction direction of original ray
+// 		vec3 refracRayDirInside = refract(normalize(rayDir), normalize(refractNormal), nnt);
+
+// 		// Find other side
+// 		vec4 e = vec4(pos + (0.1 * refracRayDirInside), 1.0);
+// 		vec4 d = vec4(refracRayDirInside, 0.0);
+// 		float bestT = 1000000000.0;
+// 		vec4 bestBrdf;
+// 		mat4 bestA;
+// 		bool testPoint = findBestHit(e, d, bestT, bestBrdf, bestA);
+
+// 		// Base out color
+// 		vec4 outColor = vec4(0.0, 0.0, 0.0, 0.0);
+
+// 		// Intersection: draw the color
+// 		vec4 intersectionPoint = e + (d * bestT);
+// 		vec3 quadricNormal = normalize((bestA*intersectionPoint + intersectionPoint*bestA).xyz);
+
+// 		if (dot(quadricNormal, refracRayDirInside) > 0.0) { // ray going out of object
+// 			quadricNormal = -1.0 * quadricNormal;
+// 			nnt = nc/nt; // must invert for refraction
+// 		} else {
+// 			nnt = nt/nc;
+// 		}
+
+// 		// if (quadricNormal.x < 0.0) {
+// 		// 	return vec4(1, 1, 1, 1);
+// 		// }
+
+// 		// initialize
+// 		vec3 refracRayDir = refracRayDirInside;
+
+// 		// HIT OTHER SIDE
+// 		// int maxI = 4;
+// 		for (int i = 0; i < 6; i++) {
+			
+// 			// Get the refracted ray direction
+// 			vec3 tempRefracRayDir = refract(normalize(refracRayDir), quadricNormal, nnt);
+			
+// 			// Total internal reflection on inside
+// 			if (tempRefracRayDir == vec3(0.0)) {
+// 				// outColor = vec4(1, 1, 1, 1);
+// 				// return shadeReflection(intersectionPoint.xyz, quadricNormal);
+				
+// 				vec3 reflRayDir = reflect(normalize(refracRayDir), quadricNormal); // QN could be negative here...
+// 				// if (i < maxI - 1) {
+// 					e = vec4(intersectionPoint.xyz + (0.1 * reflRayDir), 1.0);
+// 					d = vec4(reflRayDir, 0.0);
+// 					bestT = 1000000000.0;
+// 					bestBrdf;
+// 					bestA;
+// 					testPoint = findBestHit(e, d, bestT, bestBrdf, bestA);
+
+// 					intersectionPoint = e + (d * bestT);
+// 					quadricNormal = normalize((bestA*intersectionPoint + intersectionPoint*bestA).xyz);
+// 					quadricNormal = -1.0 * quadricNormal;
+
+// 					refracRayDir = refract(normalize(reflRayDir), quadricNormal, nnt);
+// 					// if (refracRayDir == vec3(0.0)) {
+// 					// 	return vec4(1, 1, 1, 1);;
+// 					// }
+
+// 					// continue;
+// 				// } else {
+// 				// 	refracRayDir = refract(normalize(reflRayDir), quadricNormal, 1.0); // default to see through
+// 				// }
+// 			} else {
+// 				// wasn't 0, so set it actually
+// 				// refracRayDir = refract(normalize(refracRayDir), quadricNormal, nnt);
+// 				refracRayDir = tempRefracRayDir;
+// 			}
+
+// 			// Find the next point outside the sphere
+// 			vec4 e = vec4(intersectionPoint.xyz + (0.1 * refracRayDir), 1.0);
+// 			vec4 d = vec4(refracRayDir, 0.0);
+// 			float bestT = 1000000000.0;
+// 			vec4 bestBrdf;
+// 			mat4 bestA;
+
+// 			testPoint = findBestHit(e, d, bestT, bestBrdf, bestA);
+
+// 			if (!testPoint || bestT == 1000000000.0) { // no intersection, shade as normal
+// 				outColor = shadeEnvMap(refracRayDir);
+// 				break;
+// 			}
+
+// 			// intersection, draw the color
+// 			intersectionPoint = e + (d * bestT);
+// 			quadricNormal = normalize((bestA*intersectionPoint + intersectionPoint*bestA).xyz);
+
+// 			if (bestBrdf == vec4(0, 0, 0, 0)) { // board
+// 				outColor = shadeBoard(intersectionPoint, quadricNormal);
+// 				break;
+// 			}
+
+// 			if (bestBrdf == vec4(1, 1, 1, 1)) { // metal
+// 				outColor = shadeReflection(intersectionPoint.xyz, quadricNormal);
+// 				break;
+// 			}
+// 		}
+
+// 		return outColor;
+// 	}
