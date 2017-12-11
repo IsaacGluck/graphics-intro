@@ -1,0 +1,485 @@
+Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `
+	precision highp float;
+	uniform vec3 cameraPos;
+
+	varying vec3 rayDir;
+	uniform sampler2D probeTexture;
+
+
+	uniform vec4 lightPos[2];
+	uniform vec3 lightPowerDensity[2];
+	uniform vec3 spotDir[2];
+
+	uniform mat4 quadrics[5];
+	uniform vec4 brdfs[5];
+	uniform vec3 goldR0;
+	uniform vec3 silverR0;
+
+	float noise(vec3 r) {
+	  vec3 s = vec3(7502, 22777, 4767);
+	  float f = 0.0;
+	  for(int i=0; i<16; i++) {
+	    f += sin( dot(s - vec3(32768, 32768, 32768), r * 1.0) / 65536.0);
+	    s = mod(s, 32768.0) * 2.0 + floor(s / 32768.0);
+	  }
+	  return f / 32.0 + 0.5;
+	}
+
+	vec3 noiseGrad(vec3 r) {
+	  vec3 s = vec3(7502, 22777, 4767);
+	  vec3 f = vec3(0.0, 0.0, 0.0);
+	  for(int i=0; i<16; i++) {
+	    f += cos( dot(s - vec3(32768, 32768, 32768), r*40.0)
+	                   / 65536.0) * (s - vec3(32768, 32768, 32768)) * 40.0;
+	    s = mod(s, 32768.0) * 2.0 + floor(s / 32768.0);
+	  }
+	  return f / 65536.0;
+	}
+
+	float intersectQuadric(mat4 A, vec4 e, vec4 d) {
+		float a = dot(d * A, d);
+		float b = dot(d * A, e) + dot(e * A, d);
+		float c = dot(e * A, e);
+
+		float discriminent = pow(b, 2.0) - 4.0*a*c;
+		if (discriminent < 0.0) {
+			return -1.0; // no intersection
+		}
+
+		float t1 = ((-1.0 * b) + sqrt(discriminent)) / (2.0*a);
+		float t2 = ((-1.0 * b) - sqrt(discriminent)) / (2.0*a);
+
+		if (t1 < 0.0) {
+			return t2;
+		} else if (t2 < 0.0) {
+			return t1;
+		} else {
+			if (t1 < t2) {
+				return t1;
+			} else {
+				return t2;
+			}
+		}
+	}
+
+	float intersectClippedQuadric(mat4 A, mat4 B, vec4 e, vec4 d) {
+		float a = dot(d * A, d);
+		float b = dot(d * A, e) + dot(e * A, d);
+		float c = dot(e * A, e);
+
+		float discriminent = pow(b, 2.0) - 4.0*a*c;
+		if (discriminent < 0.0) {
+			return -1.0; // no intersection
+		}
+
+		float t1 = ((-1.0 * b) + sqrt(discriminent)) / (2.0*a);
+		float t2 = ((-1.0 * b) - sqrt(discriminent)) / (2.0*a);
+
+		vec4 h1 = e + (d * t1);
+		vec4 h2 = e + (d * t2);
+
+		// In the clipped shape?
+		if (dot(h1 * B, h1) > 0.0) {
+			t1 = -1.0;
+		}
+
+		if (dot(h2 * B, h2) > 0.0) {
+			t2 = -1.0;
+		}
+		///////////
+
+		if (t1 < 0.0) {
+			return t2;
+		} else if (t2 < 0.0) {
+			return t1;
+		} else {
+			if (t1 < t2) {
+				return t1;
+			} else {
+				return t2;
+			}
+		}
+	}
+
+	float intersectTwiceClippedQuadric(mat4 A, mat4 B, mat4 C, vec4 e, vec4 d) {
+		float a = dot(d * A, d);
+		float b = dot(d * A, e) + dot(e * A, d);
+		float c = dot(e * A, e);
+
+		float discriminent = pow(b, 2.0) - 4.0*a*c;
+		if (discriminent < 0.0) {
+			return -1.0; // no intersection
+		}
+
+		float t1 = ((-1.0 * b) + sqrt(discriminent)) / (2.0*a);
+		float t2 = ((-1.0 * b) - sqrt(discriminent)) / (2.0*a);
+
+		vec4 h1 = e + (d * t1);
+		vec4 h2 = e + (d * t2);
+
+		// In the clipped shape?
+		if (dot(h1 * B, h1) > 0.0) {
+			t1 = -1.0;
+		}
+		if (dot(h2 * B, h2) > 0.0) {
+			t2 = -1.0;
+		}
+		if (dot(h1 * C, h1) > 0.0) {
+			t1 = -1.0;
+		}
+		if (dot(h2 * C, h2) > 0.0) {
+			t2 = -1.0;
+		}
+		///////////
+
+		if (t1 < 0.0) {
+			return t2;
+		} else if (t2 < 0.0) {
+			return t1;
+		} else {
+			if (t1 < t2) {
+				return t1;
+			} else {
+				return t2;
+			}
+		}
+	}
+
+	bool findBestHit(vec4 e, vec4 d, inout float bestT, out vec4 bestBrdf, out mat4 bestA) {
+
+		float tempT = intersectTwiceClippedQuadric(quadrics[0], quadrics[1], quadrics[2], e, d);
+
+		if (bestT < 0.0) {
+			bestT = tempT;
+			bestBrdf = brdfs[0];
+			bestA = quadrics[0];
+		} else if (tempT > 0.0 && tempT < bestT) {
+			bestT = tempT;
+			bestBrdf = brdfs[0];
+			bestA = quadrics[0];
+		}
+		
+		for(int i = 3; i < 5; i+=1) {
+			float tempT = intersectQuadric(quadrics[i], e, d);
+
+			if (bestT < 0.0) {
+				bestT = tempT;
+				bestBrdf = brdfs[i];
+				bestA = quadrics[i];
+				
+			} else if (tempT > 0.0 && tempT < bestT) {
+				bestT = tempT;
+				bestBrdf = brdfs[i];
+				bestA = quadrics[i];
+			}
+		}
+
+		return (bestT > 0.0);
+	}
+
+	vec4 shadeShiny(vec3 worldPos, vec3 worldNormal) {
+		vec3 baseColor = vec3(1.0, 1.0, 1.0);
+		vec3 apparentColor = vec3(0, 0, 0);
+
+		for (int i = 0; i < 1; i++) {
+			vec3 lightDir = lightPos[i].xyz - (worldPos * lightPos[i].w);
+			vec3 h = normalize(lightDir) + normalize(cameraPos - worldPos);
+			float cos = dot( normalize(worldNormal), normalize(h));
+			float shininess = pow( max(cos, 0.0), 6.0);
+			vec3 middle = lightPowerDensity[i] / dot(lightDir,lightDir);
+			float spotLight = max( dot( normalize(lightDir), normalize(spotDir[i])), 0.0);
+
+			// TEST FOR INTERSECTION
+			vec4 e = vec4(worldPos + (0.1 * lightDir), 1.0);
+			vec4 d = vec4(lightDir, 0.0);
+			float bestT = 1000000000.0;
+			vec4 bestBrdf;
+			mat4 bestA;
+
+			bool testPoint = findBestHit(e, d, bestT, bestBrdf, bestA);
+
+			// INTERSECTION - DON'T UPDATE APPARENT COLOR
+			if (testPoint && bestT != 1000000000.0) {
+				continue;
+			}
+
+			apparentColor = apparentColor + shininess * baseColor * middle * pow(spotLight,3.0);
+		}
+
+		return vec4(apparentColor, 1);
+	}
+
+	vec4 shadeEnvMap(vec3 rayDirection) {
+		vec3 sphereSurfacePos = normalize(vec3(0.0, 0.0, 1.0) + normalize(rayDirection)) / 2.0; // average the reflDir and the original view point
+		vec2 probeTex = vec2(sphereSurfacePos.x, -1.0 * sphereSurfacePos.y) + vec2(0.5, 0.5);
+		return texture2D(probeTexture, probeTex);
+	}
+
+	vec4 shadeBoard(vec4 intersectionPoint, vec3 quadricNormal) {
+		float xCor = floor(intersectionPoint.x / 2.0);
+		float zCor = floor(intersectionPoint.z / 2.0);
+		if (mod((xCor + zCor), 2.0) < 0.5) {
+			return shadeShiny(intersectionPoint.xyz, quadricNormal) + vec4(0.5, 0.5, 0.5, 0);
+		} else {
+			return shadeShiny(intersectionPoint.xyz, quadricNormal);
+		}
+	}
+
+	vec4 shadeReflection(vec3 worldPos, vec3 worldNormal) {
+		vec3 reflRayDir = reflect(normalize(rayDir), worldNormal);
+		vec4 e = vec4(worldPos + (0.1 * reflRayDir), 1.0);
+		vec4 d = vec4(reflRayDir, 0.0);
+		float bestT = 1000000000.0;
+		vec4 bestBrdf;
+		mat4 bestA;
+
+		bool testPoint = findBestHit(e, d, bestT, bestBrdf, bestA);
+
+		vec4 intersectionPoint = vec4(1.0, 1.0, 1.0, 1.0);
+		vec3 quadricNormal = vec3(1.0, 1.0, 1.0);
+
+		float alpha = dot(-1.0 * reflRayDir, worldNormal);
+		vec3 valR = silverR0 + ((1.0 - silverR0) * pow((1.0 - cos(alpha)), 5.0));
+
+		vec4 outColor = vec4(0.0, 0.0, 0.0, 0.0);
+		bool setYet = false;
+
+
+		for (int i = 0; i < 4; i++) {
+			if (!testPoint || bestT == 1000000000.0) { // no intersection, shade as envMap
+				outColor = shadeEnvMap(reflRayDir);
+				setYet = true;
+				break;
+			}
+
+			// intersection, draw the color
+			intersectionPoint = e + (d * bestT);
+			quadricNormal = normalize((bestA*intersectionPoint + intersectionPoint*bestA).xyz);
+
+			if (bestBrdf == vec4(0, 0, 0, 0)) { // board
+					outColor = shadeBoard(intersectionPoint, quadricNormal);
+					setYet = true;
+					break;
+			}
+
+			if (bestBrdf == vec4(2, 2, 2, 2)) {
+				outColor = shadeShiny(intersectionPoint.xyz, quadricNormal);
+				setYet = true;
+				break;
+			}
+
+			if (bestBrdf == vec4(1, 1, 1, 1)) {
+				reflRayDir = reflect(normalize(reflRayDir), quadricNormal);
+				e = vec4(intersectionPoint.xyz + (0.1 * reflRayDir), 1.0);
+				d = vec4(reflRayDir, 0.0);
+				bestT = 1000000000.0;
+				bestBrdf;
+				bestA;
+				testPoint = findBestHit(e, d, bestT, bestBrdf, bestA);
+
+				alpha = dot(-1.0 * reflRayDir, worldNormal);
+				vec3 valR = silverR0 + ((1.0 - silverR0) * pow((1.0 - cos(alpha)), 5.0));
+				continue;	
+			}
+		}
+		
+		if (!setYet) {
+			outColor = shadeShiny(intersectionPoint.xyz, quadricNormal);
+		}
+
+		return outColor * vec4(valR, 1.0);
+	}
+
+	// R * L2 + T * L2
+	// limit depth to 3, do all cases one after another RRR, RRT, RTR, RTT...
+
+	// Refraction
+	// must negate normal on way out, also use the reciprocal
+	
+	// refract might return 0 => total internal reflection, use reflect now need to offset inside (change normal again)
+
+	// how to test => refractive index = 1 
+
+	vec4 shadeRefraction(vec3 pos, vec3 normal) {
+		// vec4 reflection_color = shadeReflection(pos, normal);
+		// vec4 shiny_color = shadeShiny(pos, normal);
+
+		vec3 refractNormal = normal; // ray going into object
+		float nc = 1.0;
+		float nt = 1.1;
+		float nnt = nc;
+		nnt = nt/nc;
+		// if (dot(refractNormal, rayDir) > 0.0) { // ray going out of object
+		// 	refractNormal = -1.0 * refractNormal; // must invert for refraction
+		// 	nnt = nc/nt;
+		// } else {
+		// 	nnt = nt/nc;
+		// }
+
+
+		vec3 refracRayDir = refract(normalize(rayDir), normalize(refractNormal), nnt);
+
+		// Total internal reflection on outside?
+		// if (refracRayDir == vec3(0.0)) {
+		// 	return shadeReflection(pos, refractNormal);
+		// 	// break;
+		// }
+
+		// Find the other side
+		vec4 e = vec4(pos + (0.1 * refracRayDir), 1.0);
+		vec4 d = vec4(refracRayDir, 0.0);
+		float bestT = 1000000000.0;
+		vec4 bestBrdf;
+		mat4 bestA;
+		bool testPoint = findBestHit(e, d, bestT, bestBrdf, bestA);
+
+		// Base out color
+		vec4 outColor = vec4(0.0, 0.0, 0.0, 0.0);
+
+
+		// if (!testPoint || bestT == 1000000000.0) { // no intersection, shade as normal
+		// 	outColor = shadeEnvMap(refracRayDir);
+		// }
+
+		// Intersection: draw the color
+		vec4 intersectionPoint = e + (d * bestT);
+		vec3 quadricNormal = normalize((bestA*intersectionPoint + intersectionPoint*bestA).xyz);
+
+		// if (bestBrdf == vec4(0, 0, 0, 0)) { // board
+		// 	outColor = shadeBoard(intersectionPoint, quadricNormal);
+		// }
+
+		// if (bestBrdf == vec4(1, 1, 1, 1)) {
+		// 	outColor = shadeReflection(intersectionPoint.xyz, quadricNormal);
+		// }
+
+		if (bestBrdf == vec4(2, 2, 2, 2)) {
+
+			// HIT OTHER SIDE
+			for (int i = 0; i < 4; i++) {
+				
+				if (dot(refractNormal, refracRayDir) > 0.0) { // ray going out of object
+					refractNormal = -1.0 * refractNormal;
+					nnt = nc/nt; // must invert for refraction
+				} else {
+					nnt = nt/nc;
+				}
+
+				refracRayDir = refract(normalize(refracRayDir), refractNormal, nnt);
+				
+				// Total internal reflection on inside
+				if (refracRayDir == vec3(0.0)) {
+					// outColor = vec4(1, 1, 1, 1);
+
+					// reflRayDir = reflect(normalize(refracRayDir), refractNormal);
+					// e = vec4(intersectionPoint.xyz + (0.1 * reflRayDir), 1.0);
+					// d = vec4(reflRayDir, 0.0);
+					// bestT = 1000000000.0;
+					// bestBrdf;
+					// bestA;
+					// testPoint = findBestHit(e, d, bestT, bestBrdf, bestA);
+
+					return shadeReflection(intersectionPoint.xyz, refractNormal);
+					break;
+				}
+
+				vec4 e = vec4(intersectionPoint.xyz + (0.1 * refracRayDir), 1.0);
+				vec4 d = vec4(refracRayDir, 0.0);
+				float bestT = 1000000000.0;
+				vec4 bestBrdf;
+				mat4 bestA;
+
+				bool testPoint = findBestHit(e, d, bestT, bestBrdf, bestA);
+
+				if (!testPoint || bestT == 1000000000.0) { // no intersection, shade as normal
+					outColor = shadeEnvMap(refracRayDir);
+					break;
+				}
+
+				// intersection, draw the color
+				intersectionPoint = e + (d * bestT);
+				quadricNormal = normalize((bestA*intersectionPoint + intersectionPoint*bestA).xyz);
+
+				if (bestBrdf == vec4(0, 0, 0, 0)) { // board
+					outColor = shadeBoard(intersectionPoint, quadricNormal);
+					break;
+				}
+
+				if (bestBrdf == vec4(1, 1, 1, 1)) { // metal
+					outColor = shadeReflection(intersectionPoint.xyz, quadricNormal);
+					break;
+				}
+
+				if (bestBrdf == vec4(2, 2, 2, 2)) {
+					continue;
+				}
+			}
+		}
+
+		return outColor;
+	}
+
+	vec3 applyFog(in vec3 beforeFogColor, in float dist) {
+		float fog_density = 1.0 - exp( -dist*0.07);
+    vec3  fog_color  = vec3(0.5,0.6,0.7);
+    return mix(beforeFogColor, fog_color, fog_density);
+	}
+
+	vec3 applyFogSun(in vec3  beforeFogColor, in float dist, in vec3  rayDir, in vec3  sunDir) {
+	    float fog_density = 1.0 - exp(-dist*0.07);
+	    float light_density = max(dot(rayDir, sunDir), 0.0);
+	    vec3  fog_color  = mix(vec3(0.5,0.6,0.7), vec3(1.0,0.9,0.7), light_density);
+	    return mix(beforeFogColor, fog_color, fog_density);
+	}
+
+	void main(void) {
+		vec4 e = vec4(cameraPos, 1.0);
+		vec4 d = vec4(rayDir, 0.0);
+		float bestT = 1000000000.0;
+		vec4 bestBrdf;
+		mat4 bestA;
+
+		bool testPoint = findBestHit(e, d, bestT, bestBrdf, bestA);
+		vec4 out_color = vec4(0.0, 0.0, 0.0, 0.0);
+
+		if (!testPoint || bestT == 1000000000.0) { // no intersection, shade as normal
+			gl_FragColor = shadeEnvMap(rayDir);
+			return;
+		}
+
+		// intersection, draw the color
+		vec4 intersectionPoint = e + (d * bestT);
+		vec3 quadricNormal = normalize((bestA*intersectionPoint + intersectionPoint*bestA).xyz);
+
+		if (abs(intersectionPoint.y + 1.0) < .001) { // get rid of secondary board
+			gl_FragColor = shadeEnvMap(rayDir);
+			return;
+		}
+
+
+		if (bestBrdf == vec4(0, 0, 0, 0)) { // board
+			out_color = shadeBoard(intersectionPoint, quadricNormal);
+		} else if (bestBrdf == vec4(1, 1, 1, 1)) { // normal pieces
+			out_color = shadeReflection(intersectionPoint.xyz, quadricNormal);
+		} else if (bestBrdf == vec4(2, 2, 2, 2)) {
+			// out_color = shadeShiny(intersectionPoint.xyz, quadricNormal);
+			out_color = shadeRefraction(intersectionPoint.xyz, quadricNormal);
+		}
+
+
+
+
+
+		float dist = 1.0;
+		if (testPoint) {
+			dist = distance(cameraPos, intersectionPoint.xyz);
+		}
+
+		vec4 foggy = vec4(applyFog(out_color.xyz, dist), 1.0);
+		vec3 lightDir = lightPos[0].xyz;
+		vec4 foggySun = vec4(applyFogSun(out_color.xyz, dist, rayDir, lightDir), 1.0);
+
+		gl_FragColor = vec4(out_color.rgb, 1.0);
+		// gl_FragColor = vec4(foggy.rgb, 1.0);
+	}
+`;
