@@ -25,8 +25,8 @@ let Scene = function(gl) {
   this.sphere2 = new Quadric(new Mat4());
   this.sphere2.setUnitSphere();
   this.sphere2.transform(new Mat4().translate(3, 2.1, 1));
-  // Material.quadrics.at(4).set(this.sphere2.surfaceCoeffMatrix);
-  // Material.brdfs.at(4).set(1, 1, 1, 1);
+  Material.quadrics.at(4).set(this.sphere2.surfaceCoeffMatrix);
+  Material.brdfs.at(4).set(1, 1, 1, 1);
 
   
 };
@@ -76,8 +76,12 @@ Scene.prototype.lightInfo = function() {
   Material.lightPowerDensity.at(0).set(this.lightPowerDensities[0]);
   // Material.lightPowerDensity.at(1).set(this.lightPowerDensities[1]);
 
-  Material.spotDir.at(0).set(new Vec3(1, 1, 1));
+  Material.spotDir.at(0).set(new Vec3(0, 0, 0));
   // Material.spotDir.at(1).set(new Vec3(0, 1, 0));
+
+
+  // FOG
+  Material.fog.set(new Vec3(0, 0, 0));
 };
 
 Scene.prototype.boardSetup = function() {
@@ -90,12 +94,12 @@ Scene.prototype.boardSetup = function() {
       [1, 0, 0, 0,
        0, 0, 0, 0,
        0, 0, 0, 0,
-       0, 0, 0, -1024]);
+       0, 0, 0, -4096]);
   this.boardClipper2 = new Mat4(
       [0, 0, 0, 0,
        0, 0, 0, 0,
        0, 0, 1, 0,
-       0, 0, 0, -1024]);
+       0, 0, 0, -4096]);
   Material.quadrics.at(0).set(this.boardQuadric);
   Material.quadrics.at(1).set(this.boardClipper1);
   Material.quadrics.at(2).set(this.boardClipper2);
@@ -130,6 +134,18 @@ Scene.prototype.update = function(gl, keysPressed) {
   gl.clearColor(1.0, 1.0, 1.0, 1.0);
   gl.clearDepth(1.0);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+  if (keysPressed.N) {
+    Material.fog.set(new Vec3(0, 0, 0));
+  }
+
+  if (keysPressed.F) {
+    Material.fog.set(new Vec3(1, 1, 1));
+  }
+
+  if (keysPressed.L) {
+    Material.fog.set(new Vec3(2, 2, 2)); 
+  }
 
   let theScene = this;
 

@@ -92,3 +92,6 @@ Object.defineProperty(Material,
 Object.defineProperty(Material,
  "silverR0", {value: new Vec3()} );
 
+Object.defineProperty(Material,
+ "fog", {value: new Vec3()} );
+
